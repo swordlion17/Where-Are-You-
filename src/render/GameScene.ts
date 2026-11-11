@@ -17,6 +17,18 @@ const COLORS = {
 const LAMP_GAP = 560;
 const FONT = '"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif';
 
+/** Portrait framing, in world units. */
+const PORTRAIT = {
+  view: 350,       // visible street width (landscape shows ~820). Sets the zoom on a phone held upright.
+  below: 120,      // sidewalk (50) plus a strip of road with its lane line, kept visible above the thumb buttons
+  minAbove: 230,   // room above the sidewalk for lamps and the player's jump; zoom shrinks to keep it
+  camFrac: 0.15,   // player's position from the left edge; the rest of the view is look-ahead
+};
+const SKYLINE_TOP = 250; // tallest building in the skyline texture
+
+/** Where the street may draw, in CSS pixels: below the phone + HUD, above the thumb buttons. */
+export interface Frame { w: number; h: number; dpr: number; top: number; bottom: number }
+
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 function mix(a: number, b: number, t: number): number {
   const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
@@ -52,6 +64,7 @@ export class GameScene extends Phaser.Scene {
   private builtFor: World | null = null;
 
   private W = 1; private H = 1; private dpr = 1; private S = 1; private GY = 1;
+  private portrait = true; private bgK = 1; private skyTop = 0;
   private camX = 0; private shake = 0; private elapsed = 0;
 
   /** Set by main.ts; called once the scene exists so the first layout can run. */
@@ -98,13 +111,31 @@ export class GameScene extends Phaser.Scene {
     this.onCreated?.();
   }
 
-  /** Called on every window resize. Sizes in CSS pixels; groundY is where the sidewalk top sits. */
-  layout(cssW: number, cssH: number, dpr: number, groundY: number): void {
+  /**
+   * Called on every window resize. Portrait: the street fills the band between the HUD and the thumb
+   * buttons, zoomed in, with the skyline scaled up to reach the HUD. Landscape: wide view, sidewalk just
+   * above the buttons.
+   */
+  layout(f: Frame): void {
+    const { w, h, dpr } = f;
     this.dpr = dpr;
-    this.W = Math.round(cssW * dpr);
-    this.H = Math.round(cssH * dpr);
-    const portrait = cssH >= cssW;
-    const sCss = clamp(portrait ? cssW / 430 : Math.min(cssH / 430, cssW / 820), 0.55, 1.6);
+    this.W = Math.round(w * dpr);
+    this.H = Math.round(h * dpr);
+    this.portrait = h >= w;
+    let sCss: number, groundY: number;
+    if (this.portrait) {
+      const band = Math.max(1, f.bottom - f.top);
+      sCss = clamp(w / PORTRAIT.view, 0.55, 1.6);
+      if (band < (PORTRAIT.minAbove + PORTRAIT.below) * sCss) sCss = Math.max(0.55, band / (PORTRAIT.minAbove + PORTRAIT.below));
+      groundY = f.bottom - PORTRAIT.below * sCss;
+      this.bgK = clamp((groundY - f.top - 28) / (SKYLINE_TOP * sCss), 1, 1.6);
+      this.skyTop = f.top * dpr;
+    } else {
+      sCss = clamp(Math.min(h / 430, w / 820), 0.55, 1.6);
+      groundY = Math.min(h - 70, f.bottom - 14);
+      this.bgK = 1;
+      this.skyTop = 0;
+    }
     this.S = sCss * dpr;
     this.GY = Math.round(groundY * dpr);
     for (const cam of [this.cameras.main, this.worldCam, this.uiCam]) cam.setSize(this.W, this.H);
@@ -112,7 +143,7 @@ export class GameScene extends Phaser.Scene {
     this.snapCamera();
   }
 
-  private get camFrac(): number { return this.H >= this.W ? 0.2 : 0.24; }
+  private get camFrac(): number { return this.portrait ? PORTRAIT.camFrac : 0.24; }
   private snapCamera(): void { this.camX = this.game2.world.focusX - (this.W / this.S) * this.camFrac; }
 
   override update(_time: number, deltaMs: number): void {
@@ -280,24 +311,28 @@ export class GameScene extends Phaser.Scene {
         g.fillRect(s.x * W, s.y * GY * 0.8, s.s * this.dpr, s.s * this.dpr);
       }
     }
-    const sunX = W * 0.7, sunY = GY - (150 - n * 190) * this.S;
+    const sunX = W * 0.7, sunY = GY - (150 * this.bgK - n * 190) * this.S;
     g.fillStyle(0xffd796, 1 - n); g.fillCircle(sunX, sunY, 40 * this.S);
     this.sunGlow.setPosition(sunX, sunY).setScale((this.S * 1.4) / TEX_SCALE).setAlpha(0.6 * (1 - n));
-    this.moon.setPosition(W * 0.84, Math.max(GY * 0.42, GY - 430 * this.S)).setScale(this.S / TEX_SCALE).setAlpha(clamp((n - 0.2) / 0.8, 0, 1));
+    const moonY = this.portrait ? Math.max(this.skyTop + 46 * this.S, GY - 430 * this.S) : Math.max(GY * 0.42, GY - 430 * this.S);
+    this.moon.setPosition(W * 0.84, moonY).setScale(this.S / TEX_SCALE).setAlpha(clamp((n - 0.2) / 0.8, 0, 1));
   }
 
   private drawParallax(n: number, sx: number, sy: number): void {
-    const layers: [Img[], Img[], number, number][] = [
-      [this.skyline.day, this.skyline.night, 0.22, SKY_TILE],
-      [this.treeImgs.day, this.treeImgs.night, 0.5, TREE_TILE],
+    // In portrait the skyline (and, less so, the trees) is drawn larger so it rises to the HUD. Scroll speed
+    // on screen stays the same.
+    const layers: [Img[], Img[], number, number, number][] = [
+      [this.skyline.day, this.skyline.night, 0.22, SKY_TILE, this.bgK],
+      [this.treeImgs.day, this.treeImgs.night, 0.5, TREE_TILE, 1 + (this.bgK - 1) * 0.6],
     ];
-    for (const [day, night, par, tile] of layers) {
+    for (const [day, night, par, tile, k] of layers) {
+      const tileW = tile * k;
       const off = this.camX * par;
-      const k0 = Math.floor(off / tile);
+      const k0 = Math.floor(off / tileW);
       for (let i = 0; i < 3; i++) {
-        const x = ((k0 + i) * tile - off) * this.S + sx;
+        const x = ((k0 + i) * tileW - off) * this.S + sx;
         for (const [img, a] of [[day[i], 1 - n], [night[i], n]] as const) {
-          img.setPosition(x, this.GY + 2 * this.dpr + sy).setScale(this.S / TEX_SCALE).setAlpha(a).setVisible(a > 0.01 && x < this.W);
+          img.setPosition(x, this.GY + 2 * this.dpr + sy).setScale((this.S * k) / TEX_SCALE).setAlpha(a).setVisible(a > 0.01 && x < this.W);
         }
       }
     }

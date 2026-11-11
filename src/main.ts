@@ -44,16 +44,23 @@ const phaser = new Phaser.Game({
 });
 if (import.meta.env.DEV) Object.assign(window, { __game: game, __phaser: phaser });
 
+const hudEl = byId('hud');
+const repliesEl = byId('replies');
+
 /** Canvas renders at device resolution, then is zoomed back to CSS size for crisp art on phones. */
 function layout(): void {
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const w = stage.clientWidth, h = stage.clientHeight;
   phaser.scale.resize(Math.round(w * dpr), Math.round(h * dpr));
   phaser.scale.setZoom(1 / dpr);
-  const groundY = Math.min(h - 70, controlsEl.getBoundingClientRect().top - 14);
-  if (scene.isCreated) scene.layout(w, h, dpr, groundY);
+  // The street's band: below the phone + HUD and above the thumb buttons. Reply buttons come and go,
+  // so their height is left out to keep the street from jumping when they appear.
+  const top = hudEl.getBoundingClientRect().bottom - repliesEl.offsetHeight;
+  const bottom = controlsEl.getBoundingClientRect().top;
+  if (scene.isCreated) scene.layout({ w, h, dpr, top, bottom });
 }
 
 scene.onCreated = layout;
 window.addEventListener('resize', layout);
 window.visualViewport?.addEventListener('resize', layout);
+document.fonts?.ready.then(layout).catch(() => {});
