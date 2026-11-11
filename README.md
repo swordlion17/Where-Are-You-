@@ -55,11 +55,14 @@ Every sprite comes from `src/render/textures.ts` under a key (`cone`, `hydrant`,
 
 ## Android
 
-Requires Android Studio (installed) and a JDK that the Gradle version supports. Build from the command line:
+Requires Android Studio and **JDK 21**. Android Studio's bundled JDK (25) is too new for the Gradle 8.14 that Capacitor ships, so builds fail with "Unsupported class file major version 69". A portable Temurin 21 lives in `~/.jdks/jdk-21.0.13+9`. In Android Studio pick it under *Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK*.
+
+From the command line (Git Bash):
 
 ```bash
 npm run cap:sync
-cd android && ./gradlew assembleDebug
+cd android
+JAVA_HOME="$USERPROFILE/.jdks/jdk-21.0.13+9" ANDROID_HOME="$LOCALAPPDATA/Android/Sdk" ./gradlew assembleDebug
 ```
 
 The APK lands in `android/app/build/outputs/apk/debug/`.
