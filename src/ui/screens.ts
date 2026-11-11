@@ -94,14 +94,18 @@ export interface EndView {
 export class EndScreen {
   private readonly root = byId('end');
   private readonly note = byId('shareNote');
+  private readonly manual = byId<HTMLTextAreaElement>('shareManual');
 
-  constructor(onAgain: () => void, onMenu: () => void, onShare: () => Promise<string>) {
+  constructor(onAgain: () => void, onMenu: () => void, onShare: () => Promise<{ note: string; manual?: string }>) {
     byId('againBtn').addEventListener('click', onAgain);
     byId('menuBtn').addEventListener('click', onMenu);
     byId('shareBtn').addEventListener('click', async () => {
-      const msg = await onShare();
-      this.note.textContent = msg;
-      this.note.hidden = !msg;
+      const { note, manual } = await onShare();
+      this.note.textContent = note;
+      this.note.hidden = !note;
+      this.manual.value = manual ?? '';
+      this.manual.hidden = !manual;
+      if (manual) { this.manual.focus({ preventScroll: true }); this.manual.select(); }
     });
   }
 
@@ -115,6 +119,7 @@ export class EndScreen {
     setText(byId('stFlowers'), v.flowers);
     setText(byId('stIgnored'), v.ignored);
     this.note.hidden = true;
+    this.manual.hidden = true;
     this.root.hidden = false;
     try { byId('againBtn').focus({ preventScroll: true }); } catch { /* ignore */ }
   }

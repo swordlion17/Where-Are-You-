@@ -1,4 +1,5 @@
 import { sfx, unlockAudio } from '../audio/sfx';
+import { PLAY_URL } from '../config';
 import { routeById, SCRIPTS } from '../data';
 import { buzz, shareText } from '../platform/device';
 import { load, save } from '../platform/storage';
@@ -104,18 +105,23 @@ export class Game {
     this.renderHud();
   }
 
-  async share(): Promise<string> {
+  /** Shares the result. `manual` is set when nothing worked, so the end screen can show the text to copy by hand. */
+  async share(): Promise<{ note: string; manual?: string }> {
     const r = this.result;
-    if (!r) return '';
-    const text = [
+    if (!r) return { note: '' };
+    const lines = [
       `Where Are You? 🏠 ${this.route.title}`,
       `Home at ${r.arrival} (${r.lateText})`,
       `🎂 cake ${r.cake}% · 💥 ${this.world.falls} falls · 🌹 ${this.world.flowers}/${this.world.flowerTotal}`,
       `My ${this.relation} ${this.partnerName}: "${r.line}"`,
       `Rank: ${r.rank}`,
-    ].join('\n');
+    ];
+    if (PLAY_URL) lines.push(`Play: ${PLAY_URL}`);
+    const text = lines.join('\n');
     const out = await shareText('Where Are You?', text);
-    return out === 'copied' ? 'Copied. Paste it in the group chat.' : out === 'failed' ? "Couldn't share from here. Take a screenshot instead." : '';
+    if (out === 'copied') return { note: 'Copied. Paste it in the group chat.' };
+    if (out === 'failed') return { note: "Couldn't open sharing here. Copy this instead:", manual: text };
+    return { note: '' };
   }
 
   // ------------------------------------------------------------------ internals

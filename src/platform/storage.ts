@@ -1,5 +1,6 @@
 /** localStorage with safe fallbacks (private windows, blocked storage). */
-const PREFIX = 'way.';
+// Specific on purpose: itch.io serves every HTML5 game from one domain, so they all share localStorage.
+const PREFIX = 'whereareyou.';
 
 export function load<T>(key: string, fallback: T): T {
   try {

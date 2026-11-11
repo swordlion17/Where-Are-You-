@@ -168,6 +168,11 @@ h2 { margin: 0; font: 800 clamp(30px, 9vw, 40px)/1.02 var(--f-display); letter-s
 .stats dd { margin: 2px 0 0; font: 800 20px var(--f-display); font-variant-numeric: tabular-nums; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .note { margin: 0; font-size: 13px; color: var(--muted); }
+.manual {
+  width: 100%; resize: none; font: 13px/1.4 var(--f-body); color: var(--ink); background: var(--white);
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; -webkit-user-select: text; user-select: text;
+}
+.manual:focus { outline: 2px solid var(--coral); outline-offset: 1px; border-color: transparent; }
 @media (max-width: 370px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
