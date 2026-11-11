@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1a1433">
+  <meta name="description" content="Get home with the cake before dinner while your partner's texts get shorter and colder.">
+  <title>Where Are You?</title>
+</head>
+<body>
+  <div id="app">
+    <div id="stage" aria-label="A street at dusk. You walk home carrying a cake."></div>
+
+    <div id="top">
+      <div id="phone" aria-live="polite">
+        <div class="status"><span id="clock" class="clk">7:44</span><span class="bat-wrap"><span id="batPct">23%</span><span class="bat"><i id="batFill"></i></span></span></div>
+        <div class="chead">
+          <div class="avatar" id="avatar">S</div>
+          <div class="who"><div class="cname"><span id="cname">Sam</span> <span id="mood">🙂</span></div><div class="csub" id="csub">online</div></div>
+        </div>
+        <div id="msgs"></div>
+        <div id="replies" hidden></div>
+      </div>
+      <div id="hud">
+        <span class="chip" id="cakeChip" title="Cake left">🎂 <span id="hudCake">100%</span></span>
+        <span class="chip" title="Flowers picked up">🌹 <span id="hudFlowers">0/0</span></span>
+        <span class="chip" title="Distance to home">🏠 <span id="hudDist">0 m</span></span>
+        <button class="chip btn" id="muteBtn" type="button" aria-pressed="false" aria-label="Mute sound">🔊</button>
+      </div>
+    </div>
+
+    <div id="controls" class="off">
+      <button class="ctl" id="btnJump" type="button">JUMP<small>tap · space</small></button>
+      <button class="ctl" id="btnRun" type="button">RUN<small>hold · shift or →</small></button>
+    </div>
+
+    <div id="start" class="screen">
+      <div class="card">
+        <p class="eyebrow">Dinner is waiting</p>
+        <div class="title-bubble"><h1>where are you?</h1></div>
+        <span class="tdots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <p class="lede">You promised to bring the cake. One sidewalk, a deadline, and a phone that won't stop buzzing.</p>
+        <form id="startForm">
+          <fieldset class="seg">
+            <legend>Who's waiting at home?</legend>
+            <label><input type="radio" name="relation" value="girlfriend" checked><span>girlfriend</span></label>
+            <label><input type="radio" name="relation" value="boyfriend"><span>boyfriend</span></label>
+            <label><input type="radio" name="relation" value="partner"><span>partner</span></label>
+          </fieldset>
+          <label for="partnerName" id="nameLabel">Your girlfriend's name</label>
+          <input type="text" id="partnerName" name="partner" maxlength="14" value="Sam" autocomplete="off" spellcheck="false">
+          <fieldset class="routes">
+            <legend>Tonight</legend>
+            <div id="routeList"></div>
+          </fieldset>
+          <button class="primary" type="submit" id="startBtn">Start walking</button>
+        </form>
+        <ul class="how">
+          <li><b>RUN</b> hold the right button (Shift or →). Faster, but the cake wobbles.</li>
+          <li><b>JUMP</b> tap the left button (Space). Holes need a running jump.</li>
+          <li><b>REPLY</b> tap a reply on the phone. Or leave them on read.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="end" class="screen" hidden>
+      <div class="card">
+        <p class="eyebrow" id="endTime">Home</p>
+        <h2 id="endRank">Forgiven</h2>
+        <div class="final"><span class="from" id="endFrom">Sam</span><p class="bub her" id="endText">get in here</p></div>
+        <dl class="stats">
+          <div><dt>Cake left</dt><dd id="stCake">0%</dd></div>
+          <div><dt>Falls</dt><dd id="stFalls">0</dd></div>
+          <div><dt>Flowers</dt><dd id="stFlowers">0</dd></div>
+          <div><dt>Left on read</dt><dd id="stIgnored">0</dd></div>
+        </dl>
+        <div class="row">
+          <button type="button" class="secondary" id="shareBtn">Share result</button>
+          <button type="button" class="primary" id="againBtn">Walk again</button>
+        </div>
+        <button type="button" class="link" id="menuBtn">Pick another night</button>
+        <p class="note" id="shareNote" hidden></p>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

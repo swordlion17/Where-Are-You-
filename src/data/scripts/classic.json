@@ -1,0 +1,72 @@
+{
+  "id": "classic",
+  "name": "Patient, until they aren't",
+  "schedule": [
+    { "at": -13, "text": "candles are lit 🕯️" },
+    { "at": -10, "text": "where are you?", "replies": "where" },
+    { "at": -7, "text": "told my mom you're never late 🙂" },
+    { "at": -4, "text": "4 minutes.", "replies": "four" },
+    { "at": 0, "text": "it's {deadline}.", "replies": "deadline" },
+    { "at": 2, "text": "ok.", "replies": "ok" },
+    { "at": 5, "text": "the {food} is getting cold", "replies": "cold" },
+    { "at": 8, "text": "it's fine.", "replies": "fine" },
+    { "at": 11, "text": "👍" },
+    { "at": 14, "text": "eating with the cat now" },
+    { "at": 18, "text": "the cat is better company honestly" },
+    { "at": 22, "text": "don't bother." },
+    { "at": 26, "text": "i gave your fork to the cat" },
+    { "at": 30, "text": "." }
+  ],
+  "replies": {
+    "where": [
+      { "text": "omw!! 🏃", "mood": 5 },
+      { "text": "5 min ❤️", "mood": 7, "promiseMinutes": 5 }
+    ],
+    "four": [
+      { "text": "almost there i swear", "mood": 4 },
+      { "text": "traffic 😩", "mood": 1, "answer": "you're walking." }
+    ],
+    "deadline": [
+      { "text": "sorry!! ❤️", "mood": 5 },
+      { "text": "2 min!!", "mood": 5, "promiseMinutes": 2 }
+    ],
+    "ok": [
+      { "text": "don't be mad", "mood": -1, "answer": "i'm not mad." },
+      { "text": "i have cake 🎂", "mood": 6, "claimsCake": true }
+    ],
+    "cold": [
+      { "text": "i can reheat it!", "mood": 2, "answer": "it's {food}, not a hot pocket" },
+      { "text": "worth the wait", "mood": 4, "answer": "we will see" }
+    ],
+    "fine": [
+      { "text": "is it fine?", "mood": -3, "answer": "yes. it's fine." },
+      { "text": "i love you", "mood": 6, "answer": "mhm." }
+    ]
+  },
+  "reactions": {
+    "puddle": "you better not be soaking wet when you get here",
+    "banana": "did you just slip on a banana. i heard it from here",
+    "cone": "did you trip over a cone. be honest",
+    "hydrant": "you just fought a fire hydrant didn't you",
+    "dog": "is a dog chasing you or are you chasing a dog",
+    "skater": "you got hit by a skateboard didn't you",
+    "pigeons": "why do you have 40 pigeons on your story",
+    "hole": "your location just went underground??",
+    "run": "why is your little dot moving so fast lol",
+    "fall3": "are you ok?? your dot keeps falling over",
+    "fall5": "should i call someone 😟"
+  },
+  "promiseBroken": "you said {min} min. that was {min} min ago.",
+  "endings": [
+    { "minScore": 100, "rank": "Partner of the Year", "line": "you're here!! and you brought cake 🥹", "lineWithoutCake": "you're here!! 🥹 get in here" },
+    { "minScore": 80, "rank": "Forgiven", "line": "you're lucky you're cute. come in" },
+    { "minScore": 60, "rank": "On Thin Ice", "line": "the {food} is cold. sit down." },
+    { "minScore": 40, "rank": "Couch Tonight", "line": "the door's open. the {food} isn't." },
+    { "minScore": -1000, "rank": "Blocked", "line": "new phone who dis" }
+  ],
+  "extras": {
+    "cakeLie": "you said you had cake.",
+    "cakeOnShirt": "...why is there cake on your shirt",
+    "flowers": "wait are those flowers?? ok fine 🙄❤️"
+  }
+}

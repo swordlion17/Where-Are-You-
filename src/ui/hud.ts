@@ -1,0 +1,35 @@
+import { isMuted, setMuted } from '../audio/sfx';
+import { load, save } from '../platform/storage';
+import { byId, setText } from './dom';
+
+export class Hud {
+  private readonly cake = byId('hudCake');
+  private readonly cakeChip = byId('cakeChip');
+  private readonly flowers = byId('hudFlowers');
+  private readonly dist = byId('hudDist');
+  private readonly mute = byId<HTMLButtonElement>('muteBtn');
+
+  constructor() {
+    setMuted(load('muted', false));
+    this.renderMute();
+    this.mute.addEventListener('click', () => {
+      setMuted(!isMuted());
+      save('muted', isMuted());
+      this.renderMute();
+    });
+  }
+
+  set(cakePct: number, flowers: number, flowerTotal: number, metersLeft: number): void {
+    setText(this.cake, `${cakePct}%`);
+    this.cakeChip.classList.toggle('low', cakePct < 35);
+    setText(this.flowers, `${flowers}/${flowerTotal}`);
+    setText(this.dist, `${metersLeft} m`);
+  }
+
+  private renderMute(): void {
+    const m = isMuted();
+    this.mute.textContent = m ? '🔇' : '🔊';
+    this.mute.setAttribute('aria-pressed', String(m));
+    this.mute.setAttribute('aria-label', m ? 'Turn sound on' : 'Mute sound');
+  }
+}
