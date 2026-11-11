@@ -67,4 +67,4 @@ JAVA_HOME="$USERPROFILE/.jdks/jdk-21.0.13+9" ANDROID_HOME="$LOCALAPPDATA/Android
 
 The APK lands in `android/app/build/outputs/apk/debug/`.
 
-**Before the first store upload:** confirm `appId` in `capacitor.config.ts` (`com.cakegame.whereareyou`). It can't be changed after publishing.
+The app ID is `com.cakegame.whereareyou` (confirmed). It is set in `capacitor.config.ts` and `android/app/build.gradle`, and can't be changed once the app is published.

@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// NOTE: appId is permanent once the app is on Google Play / the App Store. Confirm it before the first upload.
+// appId confirmed 2026-11-11. It becomes permanent with the first Google Play / App Store upload, so don't change it.
 const config: CapacitorConfig = {
   appId: 'com.cakegame.whereareyou',
   appName: 'Where Are You?',
