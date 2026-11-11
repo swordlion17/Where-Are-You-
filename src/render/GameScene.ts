@@ -133,7 +133,9 @@ export class GameScene extends Phaser.Scene {
     } else {
       sCss = clamp(Math.min(h / 430, w / 820), 0.55, 1.6);
       groundY = Math.min(h - 70, f.bottom - 14);
-      this.bgK = 1;
+      // Same idea as portrait, so squarer windows don't show a wall of empty sky. The phone sits at the
+      // top-right in landscape and simply covers the tallest buildings.
+      this.bgK = clamp((groundY - f.top - 28) / (SKYLINE_TOP * sCss), 1, 1.6);
       this.skyTop = 0;
     }
     this.S = sCss * dpr;
@@ -425,7 +427,10 @@ export class GameScene extends Phaser.Scene {
   private drawFloats(): void {
     for (const f of this.floats) {
       const a = clamp(1 - (f.t - f.life * 0.6) / (f.life * 0.4), 0, 1);
-      f.obj.setPosition((f.x - this.camX) * this.S, this.GY + (f.y - f.t * 28) * this.S).setAlpha(a);
+      // Keep the whole text on screen: the player stands close to the left edge in portrait.
+      const half = f.obj.width / 2, pad = 8 * this.dpr;
+      const x = half * 2 + pad * 2 < this.W ? clamp((f.x - this.camX) * this.S, half + pad, this.W - half - pad) : this.W / 2;
+      f.obj.setPosition(x, this.GY + (f.y - f.t * 28) * this.S).setAlpha(a);
     }
   }
 

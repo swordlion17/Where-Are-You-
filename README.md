@@ -53,6 +53,16 @@ Script texts are written relative to the deadline (`"at": -10` = ten minutes bef
 
 Every sprite comes from `src/render/textures.ts` under a key (`cone`, `hydrant`, `house`…). Load a PNG with the same key and the same anchor and the rest of the code doesn't change. The player, dog and skater are still drawn as vector shapes in `GameScene.ts`; those become sprite sheets when the art is ready.
 
+## itch.io (web)
+
+`npm run package:web` builds and zips `dist/` into `release/where-are-you-web-<version>.zip`, ready to upload as an HTML game. Page copy, embed settings and the upload checklist are in [docs/itch-page.md](docs/itch-page.md).
+
+Things to know about running inside itch.io's iframe:
+
+- Every HTML5 game on itch.io shares one domain (`html-classic.itch.zone`), so saved data uses the `whereareyou.` prefix.
+- The iframe allows the share sheet but not the clipboard API. Sharing falls back to an older copy method, then to a text box the player copies by hand.
+- `PLAY_URL` in `src/config.ts` is appended to shared results. Set it once the page exists.
+
 ## Android
 
 Requires Android Studio and **JDK 21**. Android Studio's bundled JDK (25) is too new for the Gradle 8.14 that Capacitor ships, so builds fail with "Unsupported class file major version 69". A portable Temurin 21 lives in `~/.jdks/jdk-21.0.13+9`. In Android Studio pick it under *Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK*.

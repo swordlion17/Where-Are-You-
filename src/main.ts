@@ -54,8 +54,10 @@ function layout(): void {
   phaser.scale.resize(Math.round(w * dpr), Math.round(h * dpr));
   phaser.scale.setZoom(1 / dpr);
   // The street's band: below the phone + HUD and above the thumb buttons. Reply buttons come and go,
-  // so their height is left out to keep the street from jumping when they appear.
-  const top = hudEl.getBoundingClientRect().bottom - repliesEl.offsetHeight;
+  // so when the HUD sits under the phone their height is left out, keeping the street from jumping.
+  const hud = hudEl.getBoundingClientRect();
+  const hudUnderPhone = hud.top >= byId('phone').getBoundingClientRect().bottom - 1;
+  const top = hud.bottom - (hudUnderPhone ? repliesEl.offsetHeight : 0);
   const bottom = controlsEl.getBoundingClientRect().top;
   if (scene.isCreated) scene.layout({ w, h, dpr, top, bottom });
 }
