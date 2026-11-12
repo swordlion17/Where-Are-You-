@@ -41,25 +41,27 @@
         <span class="tdots" aria-hidden="true"><i></i><i></i><i></i></span>
         <p class="lede">You promised to bring the cake. One sidewalk, a deadline, and a phone that won't stop buzzing.</p>
         <form id="startForm">
-          <fieldset class="seg">
-            <legend>Who's waiting at home?</legend>
-            <label><input type="radio" name="relation" value="girlfriend" checked><span>girlfriend</span></label>
-            <label><input type="radio" name="relation" value="boyfriend"><span>boyfriend</span></label>
-            <label><input type="radio" name="relation" value="partner"><span>partner</span></label>
-          </fieldset>
-          <label for="partnerName" id="nameLabel">Your girlfriend's name</label>
-          <input type="text" id="partnerName" name="partner" maxlength="14" value="Sam" autocomplete="off" spellcheck="false">
-          <fieldset class="routes">
-            <legend>Tonight</legend>
-            <div id="routeList"></div>
-          </fieldset>
+          <p class="setup">
+            <span id="setupSummary"><b>Sam</b>, your girlfriend · Tuesday Dinner</span>
+            <button type="button" class="link" id="setupToggle" aria-expanded="false" aria-controls="setupPanel">Change</button>
+          </p>
+          <div id="setupPanel" hidden>
+            <fieldset class="seg">
+              <legend>Who's waiting at home?</legend>
+              <label><input type="radio" name="relation" value="girlfriend" checked><span>girlfriend</span></label>
+              <label><input type="radio" name="relation" value="boyfriend"><span>boyfriend</span></label>
+              <label><input type="radio" name="relation" value="partner"><span>partner</span></label>
+            </fieldset>
+            <label for="partnerName" id="nameLabel">Your girlfriend's name</label>
+            <input type="text" id="partnerName" name="partner" maxlength="14" value="Sam" autocomplete="off" spellcheck="false">
+            <fieldset class="routes">
+              <legend>Tonight</legend>
+              <div id="routeList"></div>
+            </fieldset>
+          </div>
           <button class="primary" type="submit" id="startBtn">Start walking</button>
         </form>
-        <ul class="how">
-          <li><b>RUN</b> hold the right button (Shift or →). Faster, but the cake wobbles.</li>
-          <li><b>JUMP</b> tap the left button (Space). Holes need a running jump.</li>
-          <li><b>REPLY</b> tap a reply on the phone. Or leave them on read.</li>
-        </ul>
+        <p class="how">Hold <b>RUN</b>, tap <b>JUMP</b>, answer the texts. Or don't.</p>
       </div>
     </div>
 

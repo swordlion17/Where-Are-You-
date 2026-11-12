@@ -4,18 +4,33 @@ import type { Relation } from '../sim/types';
 import { load, save } from '../platform/storage';
 import { byId, setText } from './dom';
 
-export interface StartChoice { name: string; relation: Relation; routeId: string }
+export interface StartChoice {
+  name: string;
+  relation: Relation;
+  routeId: string;
+  /** The player opened the options this visit (for play stats; not saved). */
+  customized?: boolean;
+}
 export interface BestRun { rank: string; arrival: string; score: number }
 
 const RELATIONS: Relation[] = ['girlfriend', 'boyfriend', 'partner'];
 
+/**
+ * One tap to play: "Start walking" with the current (or remembered) setup shown on one line.
+ * "Change" opens who's waiting, their name and the night.
+ */
 export class StartScreen {
   private readonly root = byId('start');
   private readonly form = byId<HTMLFormElement>('startForm');
   private readonly nameInput = byId<HTMLInputElement>('partnerName');
   private readonly routeList = byId('routeList');
   private readonly nameLabel = byId('nameLabel');
+  private readonly panel = byId('setupPanel');
+  private readonly toggle = byId<HTMLButtonElement>('setupToggle');
+  private readonly summary = byId('setupSummary');
+  private readonly startBtn = byId<HTMLButtonElement>('startBtn');
   private onRouteChange: ((routeId: string) => void) | null = null;
+  private customized = false;
 
   constructor(onStart: (c: StartChoice) => void) {
     const saved = load<Partial<StartChoice>>('choice', {});
@@ -23,18 +38,21 @@ export class StartScreen {
     const rel = RELATIONS.includes(saved.relation as Relation) ? (saved.relation as Relation) : 'girlfriend';
     (this.form.querySelector(`input[name="relation"][value="${rel}"]`) as HTMLInputElement | null)?.click();
     this.renderRoutes(saved.routeId ?? ROUTES[0].id);
-    this.updateLabel();
+    this.refresh();
+    this.toggle.addEventListener('click', () => this.setOpen(this.toggle.getAttribute('aria-expanded') !== 'true'));
     this.form.addEventListener('change', e => {
-      this.updateLabel();
+      this.refresh();
       const t = e.target as HTMLInputElement;
       if (t.name === 'route') this.onRouteChange?.(t.value);
     });
+    this.nameInput.addEventListener('input', () => this.refresh());
     this.form.addEventListener('submit', e => {
       e.preventDefault();
       const c = this.choice();
       save('choice', c);
-      onStart(c);
+      onStart({ ...c, customized: this.customized });
     });
+    this.focusStart();
   }
 
   /** Lets the title backdrop follow the selected route. */
@@ -48,16 +66,37 @@ export class StartScreen {
     return { name, relation, routeId };
   }
 
-  show(): void {
+  /** `options: true` opens the setup right away (coming from "Pick another night"). */
+  show(options = false): void {
     this.renderRoutes(this.choice().routeId);
+    this.refresh();
+    this.setOpen(options);
     this.root.hidden = false;
+    if (!options) this.focusStart();
   }
 
   hide(): void { this.root.hidden = true; this.nameInput.blur(); }
 
-  private updateLabel(): void {
-    const rel = this.choice().relation;
-    setText(this.nameLabel, `Your ${rel}'s name`);
+  private setOpen(open: boolean): void {
+    this.panel.hidden = !open;
+    this.toggle.setAttribute('aria-expanded', String(open));
+    this.toggle.textContent = open ? 'Done' : 'Change';
+    if (open) this.customized = true;
+  }
+
+  /** Name label and the one-line summary follow the current choices. */
+  private refresh(): void {
+    const c = this.choice();
+    setText(this.nameLabel, `Your ${c.relation}'s name`);
+    const name = document.createElement('b');
+    name.textContent = c.name;
+    const route = ROUTES.find(r => r.id === c.routeId)?.title ?? '';
+    this.summary.replaceChildren(name, `, your ${c.relation} · ${route}`);
+  }
+
+  /** So Enter or Space starts the game on a keyboard. */
+  private focusStart(): void {
+    try { this.startBtn.focus({ preventScroll: true }); } catch { /* ignore */ }
   }
 
   private renderRoutes(selected: string): void {

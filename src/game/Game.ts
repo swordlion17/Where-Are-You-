@@ -93,7 +93,11 @@ export class Game {
     this.float('hold RUN to hurry →', 70, -120, COLORS.amber, 18, 2.8);
     this.attempt++;
     this.runStartedAt = performance.now();
-    analytics.track('run_started', { route: this.route.id, relation: this.relation, attempt: this.attempt });
+    analytics.track('run_started', {
+      route: this.route.id, relation: this.relation, attempt: this.attempt,
+      // Whether the options were opened and the name changed from the default; never the name itself.
+      customized: c.customized ?? false, own_name: c.name !== 'Sam',
+    });
   }
 
   /** Call when the page is going away: a run still in progress counts as quit. */
@@ -111,7 +115,7 @@ export class Game {
   toMenu(): void {
     this.state = 'title';
     this.ui!.end.hide();
-    this.ui!.start.show();
+    this.ui!.start.show(true);
     this.preview(this.route.id);
   }
 
