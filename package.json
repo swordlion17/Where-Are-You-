@@ -1,7 +1,7 @@
 {
   "name": "where-are-you",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "package:web": "npm run build && node scripts/package-web.mjs",
+    "clips": "node scripts/record-clips.mjs",
     "cap:sync": "npm run build && cap sync android",
     "android:open": "cap open android"
   },

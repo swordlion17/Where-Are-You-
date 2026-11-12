@@ -4,7 +4,7 @@ Everything needed to put the web build on itch.io. Upload as a **Draft** first, 
 
 **Files** (made by `npm run package:web`, not in git):
 
-- Game: `release/where-are-you-web-0.1.0.zip`
+- Game: `release/where-are-you-web-<version>.zip`
 - Cover: `release/itch/cover.png` (1260×1000, itch's 630×500 ratio)
 - Screenshots: `release/itch/01-texts.png`, `02-fall.png`, `03-night.png`, `04-end.png`
 
@@ -24,7 +24,7 @@ itch.io → your avatar → **Upload new project**.
 
 ## 2. Upload the game
 
-- **Uploads** → *Upload files* → `where-are-you-web-0.1.0.zip`
+- **Uploads** → *Upload files* → the newest `where-are-you-web-<version>.zip`
 - Tick **This file will be played in the browser**
 
 ## 3. Embed options
@@ -80,3 +80,9 @@ Paste into **Description**:
 ## Share link
 
 Shared results end with `Play: https://swordlion17.itch.io/where-are-you`, set by `PLAY_URL` in `src/config.ts`. If the project URL ever changes, update it there, run `npm run package:web`, and replace the zip under *Uploads*.
+
+## Updating the game
+
+1. Bump `version` in `package.json`, then run `npm run package:web`.
+2. On itch.io: **Edit game** → *Uploads* → delete the old zip → upload the new `where-are-you-web-<version>.zip` → tick **This file will be played in the browser** → Save.
+3. Open the page on desktop and on a phone to check it loads.

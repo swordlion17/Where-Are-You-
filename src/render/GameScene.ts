@@ -427,9 +427,11 @@ export class GameScene extends Phaser.Scene {
   private drawFloats(): void {
     for (const f of this.floats) {
       const a = clamp(1 - (f.t - f.life * 0.6) / (f.life * 0.4), 0, 1);
-      // Keep the whole text on screen: the player stands close to the left edge in portrait.
+      // Text for something on screen stays fully on screen (the player stands close to the left edge in
+      // portrait). Text for something off screen, like a dog barking up ahead, stays off screen.
       const half = f.obj.width / 2, pad = 8 * this.dpr;
-      const x = half * 2 + pad * 2 < this.W ? clamp((f.x - this.camX) * this.S, half + pad, this.W - half - pad) : this.W / 2;
+      let x = (f.x - this.camX) * this.S;
+      if (x >= 0 && x <= this.W) x = half * 2 + pad * 2 < this.W ? clamp(x, half + pad, this.W - half - pad) : this.W / 2;
       f.obj.setPosition(x, this.GY + (f.y - f.t * 28) * this.S).setAlpha(a);
     }
   }

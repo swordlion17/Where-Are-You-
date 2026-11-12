@@ -42,7 +42,8 @@ const phaser = new Phaser.Game({
   banner: false,
   scene: [scene],
 });
-if (import.meta.env.DEV) Object.assign(window, { __game: game, __phaser: phaser });
+// Dev only: hooks for automated checks, and the clip director used by `npm run clips`.
+if (import.meta.env.DEV) Object.assign(window, { __game: game, __phaser: phaser, __director: () => import('./dev/director') });
 
 const hudEl = byId('hud');
 const repliesEl = byId('replies');

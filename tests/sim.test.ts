@@ -3,44 +3,29 @@ import { ROUTES, SCRIPTS } from '../src/data';
 import { parseClock, fmtClock, fmtSpoken, fillTemplate } from '../src/sim/clock';
 import { TIME_SCALE } from '../src/sim/constants';
 import { Conversation, type ConvEvent } from '../src/sim/conversation';
+import { shouldJump } from '../src/sim/autopilot';
 import { mulberry32 } from '../src/sim/rng';
 import { scoreRun } from '../src/sim/scoring';
 import { World, type WorldInput } from '../src/sim/world';
-import type { ObstacleType, RouteDef } from '../src/sim/types';
+import type { RouteDef } from '../src/sim/types';
 
 const DT = 1 / 60;
 const script = SCRIPTS[0];
 
-/** Runs a route with a simple bot. Returns the world and clock at arrival. */
-function play(route: RouteDef, mode: 'walk' | 'bot', seed = 1) {
+/** Runs a route with the autopilot (or just walking). Returns the world and clock at arrival. */
+function play(route: RouteDef, mode: 'walk' | 'bot' | 'flowers', seed = 1) {
   const w = new World(route, mulberry32(seed));
   let clock = parseClock(route.start);
   let t = 0;
   let arrived = false;
   while (!arrived && t < 180) {
-    const input: WorldInput = { run: mode === 'bot', jump: mode === 'bot' && shouldJump(w) };
+    const input: WorldInput = { run: mode !== 'walk', jump: mode !== 'walk' && shouldJump(w, { flowers: mode === 'flowers' }) };
     const ev = w.step(DT, input, true);
     clock += DT * TIME_SCALE;
     t += DT;
     if (ev.some(e => e.type === 'arrive')) arrived = true;
   }
   return { w, clock, arrived, t };
-}
-
-const NO_JUMP: ObstacleType[] = ['flower', 'pigeons'];
-function shouldJump(w: World): boolean {
-  const p = w.p;
-  if (p.mode !== 'normal' || !p.onGround) return false;
-  for (const o of w.obstacles) {
-    if (o.hit || NO_JUMP.includes(o.type)) continue;
-    const closing = p.speed - o.vx;
-    const front = o.type === 'hole' ? o.x + 4 : o.x - 22;
-    const gap = front - (p.x + 12);
-    if (gap < -4) continue;
-    const tc = gap / Math.max(1, closing);
-    if (o.type === 'hole' ? tc < 0.06 : tc < 0.16) return true;
-  }
-  return false;
 }
 
 describe('content data', () => {
@@ -82,6 +67,14 @@ describe('world', () => {
     expect(arrived).toBe(true);
     expect(clock).toBeLessThanOrEqual(parseClock(r.deadline));
     expect(w.falls).toBeLessThanOrEqual(1);
+  });
+
+  it.each(ROUTES.map(r => [r.id, r] as const))('every flower on %s can be grabbed on a clean run', (_id, r) => {
+    const { w, clock, arrived } = play(r, 'flowers');
+    expect(arrived).toBe(true);
+    expect(clock).toBeLessThanOrEqual(parseClock(r.deadline));
+    expect(w.falls).toBe(0);
+    expect(w.flowers).toBe(w.flowerTotal);
   });
 
   it.each(ROUTES.map(r => [r.id, r] as const))('only walking on %s is late and messy', (_id, r) => {

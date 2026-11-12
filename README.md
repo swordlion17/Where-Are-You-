@@ -63,6 +63,16 @@ Things to know about running inside itch.io's iframe:
 - The iframe allows the share sheet but not the clipboard API. Sharing falls back to an older copy method, then to a text box the player copies by hand.
 - `PLAY_URL` in `src/config.ts` is appended to shared results. Set it once the page exists.
 
+## Clips for TikTok / Shorts / Reels
+
+`npm run clips` renders the scripted moments in `src/dev/clips.ts` to vertical MP4s (1080×1920, 30 fps, silent) in `release/clips/`. `npm run clips -- five-minutes` renders just one.
+
+- Each clip is a short script: where the player starts, which obstacles to walk into, which replies to tap, when to stop. An autopilot (`src/sim/autopilot.ts`, the same one the tests use) jumps everything else.
+- `src/dev/director.ts` plays the script one video frame at a time: Phaser's loop is paused and stepped manually, and CSS animations are set to the same clock, so the footage is smooth however slow the capture is.
+- `scripts/record-clips.mjs` starts its own Vite server, runs headless Edge/Chrome, and pipes a screenshot per frame into ffmpeg.
+- Needs ffmpeg: on PATH, in `~/tools/ffmpeg-*/bin`, or `FFMPEG=path`. Browser: Edge or Chrome in the usual place, or `BROWSER=path`.
+- Dev only: none of this is in the game build.
+
 ## Android
 
 Requires Android Studio and **JDK 21**. Android Studio's bundled JDK (25) is too new for the Gradle 8.14 that Capacitor ships, so builds fail with "Unsupported class file major version 69". A portable Temurin 21 lives in `~/.jdks/jdk-21.0.13+9`. In Android Studio pick it under *Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK*.
