@@ -274,7 +274,8 @@ export class World {
     switch (o.type) {
       case 'cone': return { l: o.x - 9, r: o.x + 9, t: -27, b: 0 };
       case 'hydrant': return { l: o.x - 10, r: o.x + 10, t: -35, b: 0 };
-      case 'puddle': return { l: o.x - 32, r: o.x + 32, t: -3, b: 2 };
+      // Narrower than the drawn puddle (72 wide, tapered ends): a well-timed jump clears it even at walking speed.
+      case 'puddle': return { l: o.x - 26, r: o.x + 26, t: -3, b: 2 };
       case 'banana': return { l: o.x - 8, r: o.x + 8, t: -4, b: 2 };
       case 'dog': return { l: o.x - 20, r: o.x + 18, t: -26, b: 0 };
       case 'skater': return { l: o.x - 12, r: o.x + 12, t: -62, b: 0 };

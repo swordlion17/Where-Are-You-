@@ -1,4 +1,5 @@
-import { ROUTES, SCRIPTS, scriptById } from '../data';
+import { ROUTES, routeById, SCRIPTS, scriptById } from '../data';
+import { DAILY_ID, dailyRoute } from '../sim/daily';
 import { itemById } from '../sim/items';
 import { fmtClock, parseClock } from '../sim/clock';
 import type { Relation } from '../sim/types';
@@ -58,6 +59,13 @@ export class StartScreen {
       save('choice', c);
       onStart({ ...c, customized: this.customized });
     });
+    byId('dailyBtn').addEventListener('click', () => {
+      const daily = this.routeList.querySelector<HTMLInputElement>(`input[value="${DAILY_ID}"]`);
+      if (daily) daily.checked = true;
+      this.refresh();
+      this.onRouteChange?.(DAILY_ID);
+      this.form.requestSubmit();
+    });
     this.focusStart();
   }
 
@@ -97,9 +105,10 @@ export class StartScreen {
     setText(this.nameLabel, `Your ${c.relation}'s name`);
     const name = document.createElement('b');
     name.textContent = c.name;
-    const routeDef = ROUTES.find(r => r.id === c.routeId);
-    const route = routeDef?.title ?? '';
-    setText(byId('ledeItem'), itemById(routeDef?.item).word);
+    const routeDef = routeById(c.routeId);
+    const route = routeDef.title;
+    setText(byId('ledeItem'), itemById(routeDef.item).word);
+    this.renderDaily();
     const script = scriptById(c.personality);
     this.summary.replaceChildren(name, `, your ${script.adjective} ${c.relation} · ${route}`);
     setText(this.personalityHint, script.name);
@@ -122,12 +131,22 @@ export class StartScreen {
     }));
   }
 
+  /** The "Today's Daily" button: number, occasion, what's special, and today's best if played. */
+  private renderDaily(): void {
+    const d = dailyRoute();
+    setText(byId('dailyTitle'), `${d.daily?.emoji ?? ''} ${d.title}`);
+    const best = load<BestRun | null>(`best.${d.id}`, null);
+    const tags = [`${fmtClock(parseClock(d.start))} PM`, d.weather === 'rain' ? '☔ rain' : '', d.item === 'soup' ? '🍲 soup, running spills it' : ''].filter(Boolean);
+    setText(byId('dailyMeta'), best ? `Played today: ${best.rank}. Try again?` : tags.join(' · '));
+  }
+
   private renderRoutes(selected: string): void {
-    this.routeList.replaceChildren(...ROUTES.map(r => {
+    const nights = [{ value: DAILY_ID, r: dailyRoute() }, ...ROUTES.map(r => ({ value: r.id, r }))];
+    this.routeList.replaceChildren(...nights.map(({ value, r }) => {
       const label = document.createElement('label');
       label.className = 'route';
       const input = document.createElement('input');
-      input.type = 'radio'; input.name = 'route'; input.value = r.id; input.checked = r.id === selected;
+      input.type = 'radio'; input.name = 'route'; input.value = value; input.checked = value === selected;
       const body = document.createElement('span');
       const best = load<BestRun | null>(`best.${r.id}`, null);
       const title = document.createElement('b'); title.textContent = r.title;

@@ -157,6 +157,12 @@ input[type="text"]:focus { outline: 2px solid var(--coral); outline-offset: 1px;
 .link { background: none; border: 0; color: var(--muted); font: 600 14px var(--f-body); text-decoration: underline; cursor: pointer; padding: 4px; }
 a.link { align-self: center; }
 .primary:focus-visible, .secondary:focus-visible, .link:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.daily-btn { display: grid; gap: 2px; text-align: left; padding: 11px 16px; border-radius: 16px; border: 1.5px dashed var(--coral); background: #fff4ef; color: var(--ink); cursor: pointer; font: inherit; }
+.daily-btn:hover { background: #ffe9e1; }
+.daily-btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.daily-eyebrow { font: 600 11px var(--f-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--coral-deep); }
+.daily-title { font: 800 17px var(--f-display); }
+.daily-meta { font-size: 13px; color: var(--muted); }
 .how { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.4; text-align: center; }
 .how b { color: var(--ink); font-family: var(--f-display); letter-spacing: 0.04em; }
 .setup { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 2px 8px; font-size: 14px; color: var(--muted); text-align: center; }

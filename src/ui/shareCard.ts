@@ -12,6 +12,8 @@ export interface CardData {
   lateText: string;
   rank: string;
   messages: CardMessage[];
+  /** The Daily's run strip (🟩🟩💥…🏠), shown above the verdict. */
+  strip?: string;
   itemEmoji: string;
   cake: number;
   falls: number;
@@ -74,10 +76,17 @@ export async function renderShareCard(d: CardData): Promise<Blob> {
 
   // The chat, ending on their last words.
   const panelY = 260;
-  const panelBottom = drawChat(g, d, M, panelY, CARD_W - 2 * M, 900);
+  const panelBottom = drawChat(g, d, M, panelY, CARD_W - 2 * M, d.strip ? 760 : 900);
+
+  let y = panelBottom + 170;
+  if (d.strip) {
+    g.textAlign = 'center';
+    g.font = `400 62px ${BODY}`;
+    g.fillText(d.strip, CARD_W / 2, panelBottom + 112, CARD_W - 2 * M);
+    y += 115;
+  }
 
   // Verdict.
-  let y = panelBottom + 170;
   g.textAlign = 'center';
   g.fillStyle = C.paper;
   let size = 150;

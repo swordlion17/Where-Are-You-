@@ -47,6 +47,12 @@ android/              Capacitor Android project (generated, committed)
 2. Add it to `ROUTES` in `src/data/index.ts`.
 3. `npm test`: the bot has to finish it on time, and walking-only must end up late. If either fails, the layout needs work.
 
+### The Daily
+
+`src/sim/daily.ts` makes a new night every day from the date (Daily #1 = 12 Nov 2026), the same for everyone on that calendar day: the weekday's occasion (Taco Tuesday, Friday Pizza…), start time, cake or soup, sometimes rain, and a generated obstacle layout. Each candidate layout is played by the autopilot first and only used if it's fair (a good runner is on time with 2.5–5 min to spare, walking into everything is late, and on soup days sprinting loses most of it while a careful pace saves most of it on time); otherwise the next candidate is tried. `tests/daily.test.ts` checks 60 days in a row.
+
+Sharing a Daily gives a Wordle-style strip of the run: ten stretches of street (🟩 clean, 💥 fall, 🕳️ hole, 🌹 flower, 💧 spilled) ending at 🏠.
+
 ### Carried items
 
 A night's `item` (`"cake"` or `"soup"`) decides what you carry. `src/sim/items.ts` holds each item's damage per kind of fall and its spill settings; the cake never spills, the soup spills whenever its wobble passes a limit (running, jumps and landings wobble it; walking barely does). Texts can say `{item}` and `{itemEmoji}`, so the same personality works on every night. A new item needs an entry in `items.ts`, a drawing in `GameScene.drawItem`, and a soup-style test if it behaves differently.

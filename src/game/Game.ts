@@ -25,6 +25,7 @@ export interface Ui { phone: Phone; hud: Hud; controls: Controls; start: StartSc
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 const DUSK = parseClock('7:44');
 const DEFAULT_FACES = ['🥰', '🙂', '😐', '🙃', '😶'];
+const STRIP = 10;
 const COLORS = { cream: '#fff6ef', pink: '#ff9ec4', amber: '#ffc857', rose: '#ff6b8f', blush: '#ffd6e7' };
 
 /**
@@ -55,6 +56,9 @@ export class Game {
   private runStartedAt = 0;
   /** Which footfall of the walk cycle we're on, for footstep sounds. */
   private lastFoot = 0;
+  /** The run in ten stretches of street (🟩 clean, 💥 fall, 🕳️ hole, 🌹 flower, 💧 spilled), for sharing. */
+  private strip: string[] = [];
+  private stripSpill: number[] = [];
   /** The run's texts, for the share card. */
   private chat: CardMessage[] = [];
   /** Share card for the finished run, rendered as soon as the end screen shows. */
@@ -100,7 +104,7 @@ export class Game {
     this.attempt++;
     this.runStartedAt = performance.now();
     analytics.track('run_started', {
-      route: this.route.id, relation: this.relation, personality: this.script.id, attempt: this.attempt,
+      route: this.route.id, daily: this.route.daily?.n ?? 0, relation: this.relation, personality: this.script.id, attempt: this.attempt,
       // Whether the options were opened and the name changed from the default; never the name itself.
       customized: c.customized ?? false, own_name: c.name !== 'Sam',
     });
@@ -114,6 +118,19 @@ export class Game {
       route: this.route.id, attempt: this.attempt, seconds: this.runSeconds(),
       progress: Math.round((w.p.x / w.finishX) * 100) / 100, falls: w.falls, cake: Math.round(w.cake),
     });
+  }
+
+  private markStrip(e: WorldEvent): void {
+    if (e.type !== 'fall' && e.type !== 'flower' && e.type !== 'spill') return;
+    const i = Math.max(0, Math.min(STRIP - 1, Math.floor((e.x / this.world.finishX) * STRIP)));
+    if (e.type === 'fall') this.strip[i] = e.kind === 'hole' ? '🕳️' : '💥';
+    else if (e.type === 'flower') { if (this.strip[i] === '🟩') this.strip[i] = '🌹'; }
+    else this.stripSpill[i]++;
+  }
+
+  /** Ten emoji for the run, Wordle style, ending at the door. */
+  private runStrip(): string {
+    return this.strip.map((s, i) => (s === '🟩' && this.stripSpill[i] >= 4 ? '💧' : s)).join('') + '🏠';
   }
 
   /** A footstep each time a foot comes down (the walk cycle's phase crosses π/2 + kπ). */
@@ -159,10 +176,17 @@ export class Game {
   async share(): Promise<{ note: string; manual?: string; picture?: string }> {
     const r = this.result;
     if (!r) return { note: '' };
-    const lines = [
+    const w = this.world, daily = this.route.daily;
+    const lines = daily ? [
+      // The Daily: short and spoiler-free, so results compare at a glance.
+      `Where Are You? Daily #${daily.n} ${daily.emoji}`,
+      `${this.runStrip()} ${r.lateText}`,
+      `${w.item.emoji} ${r.cake}% · 💥 ${w.falls} · 🌹 ${w.flowers}/${w.flowerTotal} · ${r.rank}`,
+      `My ${this.script.adjective} ${this.relation}: "${r.line}"`,
+    ] : [
       `Where Are You? 🏠 ${this.route.title}`,
       `Home at ${r.arrival} (${r.lateText})`,
-      `${this.world.item.emoji} ${this.world.item.word} ${r.cake}% · 💥 ${this.world.falls} falls · 🌹 ${this.world.flowers}/${this.world.flowerTotal}`,
+      `${w.item.emoji} ${w.item.word} ${r.cake}% · 💥 ${w.falls} falls · 🌹 ${w.flowers}/${w.flowerTotal}`,
       `My ${this.script.adjective} ${this.relation} ${this.partnerName}: "${r.line}"`,
       `Rank: ${r.rank}`,
     ];
@@ -170,7 +194,7 @@ export class Game {
     const text = lines.join('\n');
     const file = (await this.card) ?? undefined;
     const out = await shareText('Where Are You?', text, file);
-    analytics.track('share_tapped', { route: this.route.id, rank: r.rank, outcome: out });
+    analytics.track('share_tapped', { route: this.route.id, daily: daily?.n ?? 0, rank: r.rank, outcome: out });
     if (out === 'image' || out === 'shared') return { note: '' };
     if (file && !this.pictureUrl) this.pictureUrl = URL.createObjectURL(file);
     const picture = this.pictureUrl ?? undefined;
@@ -188,6 +212,8 @@ export class Game {
     this.result = null;
     this.endT = 0; this.knocked = false; this.opened = false; this.endWait = 0;
     this.chat = [];
+    this.strip = Array(STRIP).fill('🟩');
+    this.stripSpill = Array(STRIP).fill(0);
     this.card = null;
     if (this.pictureUrl) { URL.revokeObjectURL(this.pictureUrl); this.pictureUrl = null; }
   }
@@ -199,6 +225,7 @@ export class Game {
   private onWorld(e: WorldEvent): void {
     this.fx.push(e);
     const w = this.world;
+    this.markStrip(e);
     switch (e.type) {
       case 'jump': sfx.jump(); break;
       case 'land': sfx.land(e.hard); break;
@@ -280,14 +307,16 @@ export class Game {
     const best = load<BestRun | null>(key, null);
     if (!best || r.score > best.score) save(key, { rank: r.rank, arrival: r.arrival, score: r.score });
     analytics.track('run_finished', {
-      route: this.route.id, attempt: this.attempt, seconds: this.runSeconds(),
-      rank: r.rank, score: Math.round(r.score),
+      route: this.route.id, daily: this.route.daily?.n ?? 0, attempt: this.attempt, seconds: this.runSeconds(),
+      rank: r.rank, score: Math.round(r.score), strip: this.runStrip(),
       late_minutes: Math.round(((this.clock - parseClock(this.route.deadline)) / 60) * 10) / 10,
       item: w.item.id, cake: r.cake, spilled: Math.round(w.spilled), falls: w.falls, flowers: w.flowers,
       replied: this.convo.replied, left_on_read: this.convo.ignored,
     });
     this.card = renderShareCard({
-      name: this.partnerName, relation: `${this.script.adjective} ${this.relation}`, route: this.route.title, arrival: r.arrival, lateText: r.lateText,
+      name: this.partnerName, relation: `${this.script.adjective} ${this.relation}`,
+      route: this.route.daily ? `Daily #${this.route.daily.n} ${this.route.daily.emoji}` : this.route.title,
+      strip: this.route.daily ? this.runStrip() : undefined, arrival: r.arrival, lateText: r.lateText,
       rank: r.rank, messages: this.chat.slice(-8), itemEmoji: w.item.emoji, cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`,
       ignored: this.convo.ignored, url: PLAY_URL,
     }).then(b => new File([b], 'where-are-you.png', { type: 'image/png' })).catch(() => null);

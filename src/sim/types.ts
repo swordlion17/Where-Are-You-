@@ -25,6 +25,8 @@ export interface RouteDef {
   /** Template values used by the texting script, e.g. {food}. */
   vars: Record<string, string>;
   obstacles: ObstacleDef[];
+  /** Set on generated Daily nights: the day number and the occasion's emoji. */
+  daily?: { n: number; emoji: string };
 }
 
 export interface ReplyOption {

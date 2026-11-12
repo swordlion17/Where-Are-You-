@@ -1,3 +1,4 @@
+import { DAILY_ID, dailyRoute } from '../sim/daily';
 import type { RouteDef, Script } from '../sim/types';
 import classic from './scripts/classic.json';
 import worried from './scripts/worried.json';
@@ -11,7 +12,9 @@ export const ROUTES: RouteDef[] = [tuesday as RouteDef, anniversary as RouteDef,
 /** Partner personalities; the first is the default. */
 export const SCRIPTS: Script[] = [classic as Script, worried as Script];
 
+/** A night by id. "daily" (or any "daily-N") is today's generated Daily. */
 export function routeById(id: string): RouteDef {
+  if (id === DAILY_ID || id.startsWith(`${DAILY_ID}-`)) return dailyRoute();
   return ROUTES.find(r => r.id === id) ?? ROUTES[0];
 }
 
