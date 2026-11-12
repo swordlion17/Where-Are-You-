@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import pkg from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 // base './' so the built files load from the Capacitor WebView (file-relative paths).
 export default defineConfig({

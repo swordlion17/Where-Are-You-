@@ -95,16 +95,19 @@ export class EndScreen {
   private readonly root = byId('end');
   private readonly note = byId('shareNote');
   private readonly manual = byId<HTMLTextAreaElement>('shareManual');
+  private readonly picture = byId<HTMLAnchorElement>('savePicture');
 
-  constructor(onAgain: () => void, onMenu: () => void, onShare: () => Promise<{ note: string; manual?: string }>) {
+  constructor(onAgain: () => void, onMenu: () => void, onShare: () => Promise<{ note: string; manual?: string; picture?: string }>) {
     byId('againBtn').addEventListener('click', onAgain);
     byId('menuBtn').addEventListener('click', onMenu);
     byId('shareBtn').addEventListener('click', async () => {
-      const { note, manual } = await onShare();
+      const { note, manual, picture } = await onShare();
       this.note.textContent = note;
       this.note.hidden = !note;
       this.manual.value = manual ?? '';
       this.manual.hidden = !manual;
+      if (picture) this.picture.href = picture;
+      this.picture.hidden = !picture;
       if (manual) { this.manual.focus({ preventScroll: true }); this.manual.select(); }
     });
   }
@@ -120,6 +123,7 @@ export class EndScreen {
     setText(byId('stIgnored'), v.ignored);
     this.note.hidden = true;
     this.manual.hidden = true;
+    this.picture.hidden = true;
     this.root.hidden = false;
     try { byId('againBtn').focus({ preventScroll: true }); } catch { /* ignore */ }
   }

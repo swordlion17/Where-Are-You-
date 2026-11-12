@@ -16,12 +16,21 @@ export function buzz(strength: 'light' | 'medium' | 'heavy' = 'light'): void {
   try { navigator.vibrate?.(strength === 'heavy' ? 60 : strength === 'medium' ? 40 : 20); } catch { /* refused */ }
 }
 
-export type ShareOutcome = 'shared' | 'copied' | 'failed';
+/** 'image': picture + text went through the share sheet; 'shared': text only; 'copied': text on the clipboard. */
+export type ShareOutcome = 'image' | 'shared' | 'copied' | 'failed';
 
-/** Native share sheet on device; Web Share or clipboard in the browser. */
-export async function shareText(title: string, text: string): Promise<ShareOutcome> {
+/**
+ * Share sheet with the picture where the browser can share files (phones), else text through the
+ * share sheet, else the clipboard. On the native app the picture isn't wired up yet (needs the
+ * Filesystem plugin), so it shares text.
+ */
+export async function shareText(title: string, text: string, picture?: File): Promise<ShareOutcome> {
   if (isNative) {
     try { await Share.share({ title, text, dialogTitle: title }); return 'shared'; } catch { /* fall through */ }
+  } else if (picture && typeof navigator.canShare === 'function' && navigator.canShare({ files: [picture] })) {
+    try { await navigator.share({ title, text, files: [picture] }); return 'image'; } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return 'image';
+    }
   } else if (typeof navigator.share === 'function') {
     try { await navigator.share({ title, text }); return 'shared'; } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return 'shared';

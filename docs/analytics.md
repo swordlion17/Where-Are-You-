@@ -10,7 +10,7 @@ Anonymous events from the game tell us whether people who arrive from a clip act
 | `run_started` | Start walking / Walk again | route, relation (girlfriend/boyfriend/partner), attempt number this visit |
 | `reply_tapped` | A reply is tapped | route, which text it answered (`where`, `four`...), which option |
 | `run_finished` | End screen appears | route, attempt, seconds, rank, score, minutes late (negative = early), cake %, falls, flowers, replies, left on read |
-| `share_tapped` | Share result | route, rank, outcome (`shared`, `copied`, `failed`) |
+| `share_tapped` | Share result | route, rank, outcome (`image` = picture shared, `shared` = text only, `copied`, `failed`) |
 | `run_quit` | Page closed mid-run | route, attempt, seconds, how far along (0–1), falls, cake % |
 
 Every event also carries `app_version`, `platform` (web/android) and `embedded` (inside itch.io's frame or not).

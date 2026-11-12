@@ -15,6 +15,7 @@ import type { Controls } from '../ui/controls';
 import type { Hud } from '../ui/hud';
 import type { Phone } from '../ui/phone';
 import type { BestRun, EndScreen, StartChoice, StartScreen } from '../ui/screens';
+import { renderShareCard, type CardMessage } from '../ui/shareCard';
 
 export type FxEvent = WorldEvent | { type: 'float'; text: string; x: number; y: number; color: string; size: number; life: number };
 type State = 'title' | 'play' | 'ending' | 'over';
@@ -50,6 +51,11 @@ export class Game {
   /** Runs started this visit, and when the current one started (for play stats). */
   private attempt = 0;
   private runStartedAt = 0;
+  /** The run's texts, for the share card. */
+  private chat: CardMessage[] = [];
+  /** Share card for the finished run, rendered as soon as the end screen shows. */
+  private card: Promise<File | null> | null = null;
+  private pictureUrl: string | null = null;
 
   constructor(routeId: string) {
     this.reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -124,8 +130,12 @@ export class Game {
     this.renderHud();
   }
 
-  /** Shares the result. `manual` is set when nothing worked, so the end screen can show the text to copy by hand. */
-  async share(): Promise<{ note: string; manual?: string }> {
+  /**
+   * Shares the result: the picture plus text where the device can, otherwise the text. `manual` is
+   * set when nothing worked (the end screen shows the text to copy); `picture` is a link to save the
+   * image where it couldn't be shared directly (desktop browsers).
+   */
+  async share(): Promise<{ note: string; manual?: string; picture?: string }> {
     const r = this.result;
     if (!r) return { note: '' };
     const lines = [
@@ -137,11 +147,14 @@ export class Game {
     ];
     if (PLAY_URL) lines.push(`Play: ${PLAY_URL}`);
     const text = lines.join('\n');
-    const out = await shareText('Where Are You?', text);
+    const file = (await this.card) ?? undefined;
+    const out = await shareText('Where Are You?', text, file);
     analytics.track('share_tapped', { route: this.route.id, rank: r.rank, outcome: out });
-    if (out === 'copied') return { note: 'Copied. Paste it in the group chat.' };
-    if (out === 'failed') return { note: "Couldn't open sharing here. Copy this instead:", manual: text };
-    return { note: '' };
+    if (out === 'image' || out === 'shared') return { note: '' };
+    if (file && !this.pictureUrl) this.pictureUrl = URL.createObjectURL(file);
+    const picture = this.pictureUrl ?? undefined;
+    if (out === 'copied') return { note: 'Copied. Paste it in the group chat.', picture };
+    return { note: "Couldn't open sharing here. Copy this instead:", manual: text, picture };
   }
 
   // ------------------------------------------------------------------ internals
@@ -153,6 +166,9 @@ export class Game {
     this.fx = [];
     this.result = null;
     this.endT = 0; this.knocked = false; this.opened = false; this.endWait = 0;
+    this.chat = [];
+    this.card = null;
+    if (this.pictureUrl) { URL.revokeObjectURL(this.pictureUrl); this.pictureUrl = null; }
   }
 
   private float(text: string, x: number, y: number, color: string, size = 16, life = 1.4): void {
@@ -189,6 +205,7 @@ export class Game {
   }
 
   private showConv(e: ConvEvent): void {
+    if (e.type === 'message') this.chat.push({ from: e.from, text: e.text });
     if (e.type === 'message' && e.from === 'them') { sfx.ping(); buzz('light'); }
     this.ui!.phone.apply(e, i => this.pick(i));
   }
@@ -240,6 +257,11 @@ export class Game {
       cake: r.cake, falls: w.falls, flowers: w.flowers,
       replied: this.convo.replied, left_on_read: this.convo.ignored,
     });
+    this.card = renderShareCard({
+      name: this.partnerName, relation: this.relation, route: this.route.title, arrival: r.arrival, lateText: r.lateText,
+      rank: r.rank, messages: this.chat.slice(-8), cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`,
+      ignored: this.convo.ignored, url: PLAY_URL,
+    }).then(b => new File([b], 'where-are-you.png', { type: 'image/png' })).catch(() => null);
     this.ui!.end.show({
       arrival: r.arrival, lateText: r.lateText, rank: r.rank, line: r.line,
       from: `${this.partnerName}, your ${this.relation}`,

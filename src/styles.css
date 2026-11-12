@@ -155,6 +155,7 @@ input[type="text"]:focus { outline: 2px solid var(--coral); outline-offset: 1px;
 .primary:hover { background: var(--coral-deep); }
 .secondary { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
 .link { background: none; border: 0; color: var(--muted); font: 600 14px var(--f-body); text-decoration: underline; cursor: pointer; padding: 4px; }
+a.link { align-self: center; }
 .primary:focus-visible, .secondary:focus-visible, .link:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
 .how { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
 .how b { color: var(--ink); font-family: var(--f-display); letter-spacing: 0.04em; }

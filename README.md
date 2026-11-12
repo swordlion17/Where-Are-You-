@@ -33,7 +33,7 @@ src/
     scripts/*.json    one file per partner personality: schedule, replies, reactions, endings
   game/Game.ts        state machine (title → play → ending → over); wires sim ↔ UI ↔ audio
   render/             Phaser scene + placeholder art (drawn in code; swap for PNGs by texture key)
-  ui/                 DOM overlays: phone, HUD, thumb controls, start/end screens
+  ui/                 DOM overlays: phone, HUD, thumb controls, start/end screens, share card picture
   audio/sfx.ts        synthesized placeholder sound effects
   platform/           storage, haptics, native share (Capacitor on device, web fallbacks)
 tests/sim.test.ts     content validation + a bot that must finish every route on time
