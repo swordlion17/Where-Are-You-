@@ -10,6 +10,6 @@ export const PLAY_URL = 'https://swordlion17.itch.io/where-are-you';
  * `host` is https://eu.i.posthog.com for EU Cloud, https://us.i.posthog.com for US Cloud.
  */
 export const ANALYTICS = {
-  key: '',
-  host: 'https://eu.i.posthog.com',
+  key: 'phc_CKCiedztGayapTds3HS6poQY5e2xRbRLLoAcNBGQu8Rf',
+  host: 'https://eu.i.posthog.com', // project is on EU Cloud (checked against the flags endpoint)
 };

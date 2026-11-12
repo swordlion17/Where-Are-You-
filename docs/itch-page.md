@@ -57,6 +57,8 @@ Paste into **Description**:
 > Two nights so far: *Tuesday Dinner* and *Anniversary*. Pick girlfriend, boyfriend or partner and type their name. At the door you'll find out how they took it. Share it with them if you're brave.
 >
 > This is an early prototype. Tell us in the comments what made you laugh and what made you quit.
+>
+> *Anonymous play stats (no cookies, no personal data) help us tune the game.*
 
 ## 5. Details
 
