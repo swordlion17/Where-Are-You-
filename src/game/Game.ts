@@ -1,6 +1,7 @@
 import { sfx, unlockAudio } from '../audio/sfx';
 import { PLAY_URL } from '../config';
 import { routeById, SCRIPTS } from '../data';
+import { analytics } from '../platform/analytics';
 import { buzz, shareText } from '../platform/device';
 import { load, save } from '../platform/storage';
 import { fmtClock, parseClock } from '../sim/clock';
@@ -46,6 +47,9 @@ export class Game {
   private opened = false;
   private endWait = 0;
   private result: Result | null = null;
+  /** Runs started this visit, and when the current one started (for play stats). */
+  private attempt = 0;
+  private runStartedAt = 0;
 
   constructor(routeId: string) {
     this.reducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,7 +85,22 @@ export class Game {
     ui.end.hide();
     ui.controls.setEnabled(true);
     this.float('hold RUN to hurry →', 70, -120, COLORS.amber, 18, 2.8);
+    this.attempt++;
+    this.runStartedAt = performance.now();
+    analytics.track('run_started', { route: this.route.id, relation: this.relation, attempt: this.attempt });
   }
+
+  /** Call when the page is going away: a run still in progress counts as quit. */
+  leaving(): void {
+    if (this.state !== 'play') return;
+    const w = this.world;
+    analytics.track('run_quit', {
+      route: this.route.id, attempt: this.attempt, seconds: this.runSeconds(),
+      progress: Math.round((w.p.x / w.finishX) * 100) / 100, falls: w.falls, cake: Math.round(w.cake),
+    });
+  }
+
+  private runSeconds(): number { return Math.round((performance.now() - this.runStartedAt) / 100) / 10; }
 
   toMenu(): void {
     this.state = 'title';
@@ -119,6 +138,7 @@ export class Game {
     if (PLAY_URL) lines.push(`Play: ${PLAY_URL}`);
     const text = lines.join('\n');
     const out = await shareText('Where Are You?', text);
+    analytics.track('share_tapped', { route: this.route.id, rank: r.rank, outcome: out });
     if (out === 'copied') return { note: 'Copied. Paste it in the group chat.' };
     if (out === 'failed') return { note: "Couldn't open sharing here. Copy this instead:", manual: text };
     return { note: '' };
@@ -175,6 +195,7 @@ export class Game {
 
   private pick(i: number): void {
     if (this.state !== 'play') return;
+    analytics.track('reply_tapped', { route: this.route.id, reply: this.convo.openReplies, option: i });
     sfx.send();
     for (const e of this.convo.choose(i, this.clock)) this.showConv(e);
   }
@@ -212,6 +233,13 @@ export class Game {
     const key = `best.${this.route.id}`;
     const best = load<BestRun | null>(key, null);
     if (!best || r.score > best.score) save(key, { rank: r.rank, arrival: r.arrival, score: r.score });
+    analytics.track('run_finished', {
+      route: this.route.id, attempt: this.attempt, seconds: this.runSeconds(),
+      rank: r.rank, score: Math.round(r.score),
+      late_minutes: Math.round(((this.clock - parseClock(this.route.deadline)) / 60) * 10) / 10,
+      cake: r.cake, falls: w.falls, flowers: w.flowers,
+      replied: this.convo.replied, left_on_read: this.convo.ignored,
+    });
     this.ui!.end.show({
       arrival: r.arrival, lateText: r.lateText, rank: r.rank, line: r.line,
       from: `${this.partnerName}, your ${this.relation}`,

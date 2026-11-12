@@ -3,6 +3,8 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Share } from '@capacitor/share';
 
 export const isNative = Capacitor.isNativePlatform();
+/** 'web', 'android' or 'ios'. */
+export const platformName = Capacitor.getPlatform();
 
 /** Short buzz. Native haptics on device, navigator.vibrate on the web, silent where neither works. */
 export function buzz(strength: 'light' | 'medium' | 'heavy' = 'light'): void {

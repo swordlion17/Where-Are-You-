@@ -20,7 +20,7 @@ const FREEZE_AFTER = 0.35;    // seconds of motion before a freeze-frame tail st
 const MAX_SECONDS = 60;
 
 // Private parts of Game, World and the scene that only this tool touches.
-interface GameGuts { seed: number; convo: { replyKey: string | null } }
+interface GameGuts { seed: number }
 interface WorldGuts { hinted: Set<string> }
 interface SceneGuts { snapCamera(): void }
 
@@ -168,7 +168,7 @@ export class Director {
   }
 
   private tapReply(s: Segment): void {
-    const key = (this.game as unknown as GameGuts).convo.replyKey;
+    const key = this.game.convo.openReplies;
     const buttons = document.querySelectorAll<HTMLButtonElement>('#replies button');
     if (!key || buttons.length === 0) { this.replySeen = null; return; }
     this.replySeen ??= this.vt;

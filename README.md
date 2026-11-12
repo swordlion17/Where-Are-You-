@@ -63,6 +63,10 @@ Things to know about running inside itch.io's iframe:
 - The iframe allows the share sheet but not the clipboard API. Sharing falls back to an older copy method, then to a text box the player copies by hand.
 - `PLAY_URL` in `src/config.ts` is appended to shared results. Set it once the page exists.
 
+## Play stats
+
+Anonymous gameplay events go to PostHog when `ANALYTICS.key` in `src/config.ts` is set: no cookies, no stored IDs, no names. What's sent, setup and dashboard: [docs/analytics.md](docs/analytics.md).
+
 ## Clips for TikTok / Shorts / Reels
 
 `npm run clips` renders the scripted moments in `src/dev/clips.ts` to vertical MP4s (1080×1920, 30 fps, silent) in `release/clips/`. `npm run clips -- five-minutes` renders just one.

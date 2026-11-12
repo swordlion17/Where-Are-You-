@@ -5,6 +5,8 @@ import '@fontsource/dm-sans/600.css';
 import './styles.css';
 import Phaser from 'phaser';
 import { Game } from './game/Game';
+import { analytics } from './platform/analytics';
+import { platformName } from './platform/device';
 import { GameScene } from './render/GameScene';
 import { Controls } from './ui/controls';
 import { byId } from './ui/dom';
@@ -67,3 +69,10 @@ scene.onCreated = layout;
 window.addEventListener('resize', layout);
 window.visualViewport?.addEventListener('resize', layout);
 document.fonts?.ready.then(layout).catch(() => {});
+
+// Anonymous play stats (no-ops unless configured; see src/platform/analytics.ts).
+let embedded = true;
+try { embedded = window.top !== window.self; } catch { /* cross-origin parent: embedded */ }
+analytics.setBase({ app_version: __APP_VERSION__, platform: platformName, embedded });
+analytics.track('game_loaded', { portrait: window.innerHeight >= window.innerWidth });
+window.addEventListener('pagehide', () => game.leaving());

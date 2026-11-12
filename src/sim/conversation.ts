@@ -44,6 +44,8 @@ export class Conversation {
   /** Nothing typing, nothing queued. */
   get idle(): boolean { return this.queue.length === 0 && this.typingT <= 0 && this.current === null; }
   get replyOptions(): ReplyOption[] | null { return this.replyKey ? this.script.replies[this.replyKey] ?? null : null; }
+  /** Script key of the reply set on screen (e.g. "where"), or null. */
+  get openReplies(): string | null { return this.replyKey; }
 
   update(dt: number, clock: number, playing: boolean): ConvEvent[] {
     this.out = [];

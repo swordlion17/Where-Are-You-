@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
+import pkg from './package.json';
 
 // base './' so the built files load from the Capacitor WebView (file-relative paths).
 export default defineConfig({
   base: './',
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   build: {
     outDir: 'dist',
     target: 'es2022',
