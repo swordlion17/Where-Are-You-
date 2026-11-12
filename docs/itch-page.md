@@ -15,7 +15,7 @@ itch.io → your avatar → **Upload new project**.
 | Field | Value |
 |---|---|
 | Title | Where Are You? |
-| Project URL | `where-are-you` |
+| Project URL | `where-are-you` (exactly this: shared results link to https://swordlion17.itch.io/where-are-you) |
 | Short description or tagline | Get home with the cake before dinner. Your partner is texting. |
 | Classification | Games |
 | Kind of project | HTML |
@@ -77,6 +77,6 @@ Paste into **Description**:
 3. Finish a run and press **Share result**: a phone opens the share sheet, desktop says "Copied".
 4. Then switch Visibility to **Public**.
 
-## After the page exists
+## Share link
 
-Shared results should end with a link to the game. Put the page URL in `src/config.ts` (`PLAY_URL`), run `npm run package:web` again, and replace the zip under *Uploads*.
+Shared results end with `Play: https://swordlion17.itch.io/where-are-you`, set by `PLAY_URL` in `src/config.ts`. If the project URL ever changes, update it there, run `npm run package:web`, and replace the zip under *Uploads*.

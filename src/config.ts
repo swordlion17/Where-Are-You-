@@ -1,5 +1,5 @@
 /**
  * Public page where people can play, added to every shared result so friends can follow it.
- * Leave empty until the itch.io page exists, then set it (e.g. 'https://<name>.itch.io/where-are-you') and rebuild.
+ * Must match the itch.io project URL (Project URL field: where-are-you).
  */
-export const PLAY_URL = '';
+export const PLAY_URL = 'https://swordlion17.itch.io/where-are-you';
