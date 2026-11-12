@@ -34,6 +34,8 @@ export interface ClipPlan {
   route: string;
   name?: string;
   relation?: Relation;
+  /** Script id (default "classic"). */
+  personality?: string;
   /** World seed, so falls look the same on every render. */
   seed?: number;
   /** Off-camera warm-up so the phone already has a few texts: start at this clock, play this long. */
@@ -71,6 +73,25 @@ export const CLIPS: Record<string, ClipPlan> = {
     route: 'tuesday',
     warm: { from: -13.5, seconds: 9 },
     segments: [{ set: { x: 5700 }, replies: { where: 0 }, flowers: true, until: 'over', tail: 3 }],
+  },
+
+  // The worrier, rainy parents night: "omw!!", then the dot vanishes into a hole.
+  'dot-disappeared': {
+    route: 'parents',
+    personality: 'worried',
+    warm: { from: -13, seconds: 9 },
+    segments: [{ set: { x: 2400 }, replies: { where: 0 }, hit: [3400], until: { text: 'DISAPPEARED' }, tail: 2.5, freeze: true }],
+  },
+
+  // The worrier, ignored: two puddles, a jump cut, and "i made posters."
+  'missing-person': {
+    route: 'parents',
+    personality: 'worried',
+    warm: { from: -13, seconds: 9 },
+    segments: [
+      { set: { x: 5100 }, hit: [5350, 5600], until: { seconds: 8 } },
+      { skip: 45, set: { x: -650, cake: 0, mood: 25 }, card: '15 minutes later', hit: [8800], until: 'over', tail: 3 },
+    ],
   },
 
   // Anniversary night: "omw!!", then straight into a hole. Short on purpose; loops well.

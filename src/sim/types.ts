@@ -12,6 +12,8 @@ export interface RouteDef {
   title: string;
   blurb: string;
   item: 'cake';
+  /** Rain darkens the sky, lights the lamps early and adds falling rain. */
+  weather?: 'rain';
   /** Clock times as "H:MM" (PM). */
   start: string;
   deadline: string;
@@ -51,6 +53,10 @@ export interface Ending {
 export interface Script {
   id: string;
   name: string;
+  /** One word for the start screen and share card: "your {adjective} girlfriend". */
+  adjective: string;
+  /** Phone header face from best mood to worst (five). */
+  faces?: string[];
   schedule: ScheduledText[];
   replies: Record<string, ReplyOption[]>;
   reactions: Record<string, string>;

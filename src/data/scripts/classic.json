@@ -1,6 +1,7 @@
 {
   "id": "classic",
   "name": "Patient, until they aren't",
+  "adjective": "salty",
   "schedule": [
     { "at": -13, "text": "candles are lit 🕯️" },
     { "at": -10, "text": "where are you?", "replies": "where" },

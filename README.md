@@ -43,9 +43,16 @@ android/              Capacitor Android project (generated, committed)
 
 ### Adding a night
 
-1. Copy `src/data/routes/tuesday.json`, change `id`, times, `length`, `intro`, `vars.food` and the obstacle list.
+1. Copy `src/data/routes/tuesday.json`, change `id`, times, `length`, `intro`, `vars.food` and the obstacle list. `"weather": "rain"` gives an overcast sky, early lamps and rain (see `parents.json`).
 2. Add it to `ROUTES` in `src/data/index.ts`.
 3. `npm test`: the bot has to finish it on time, and walking-only must end up late. If either fails, the layout needs work.
+
+### Adding a partner personality
+
+1. Copy `src/data/scripts/classic.json` (or `worried.json`). Change `id`, `name` (the one-line description on the start screen), `adjective` (one lowercase word: "your {adjective} girlfriend") and optionally `faces` (five, best mood first).
+2. Write the texts: `schedule`, `replies`, a reaction for every obstacle type plus `run`, `fall3`, `fall5`, `promiseBroken` and five `endings`.
+3. Add it to `SCRIPTS` in `src/data/index.ts`. It shows up under *What are they like?* on the start screen.
+4. `npm test` checks every personality has every reaction, reply set and ending.
 
 Script texts are written relative to the deadline (`"at": -10` = ten minutes before). `{deadline}` and any route `vars` such as `{food}` are filled in automatically.
 

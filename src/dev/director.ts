@@ -60,7 +60,7 @@ export class Director {
     style.textContent = '*, *::before, *::after { transition: none !important; }';
     document.head.append(style);
     (this.game as unknown as GameGuts).seed = plan.seed ?? 7;
-    this.game.start({ name: plan.name ?? 'Sam', relation: plan.relation ?? 'girlfriend', routeId: plan.route });
+    this.game.start({ name: plan.name ?? 'Sam', relation: plan.relation ?? 'girlfriend', routeId: plan.route, personality: plan.personality ?? 'classic' });
     // No tutorial hints ("tap JUMP", ...): they clutter the shot.
     for (const k of ['puddle', 'hole', 'flower']) (this.world as unknown as WorldGuts).hinted.add(k);
     for (const o of this.world.obstacles) this.origX.set(o, o.x);

@@ -1,0 +1,75 @@
+{
+  "id": "worried",
+  "name": "Assumes the worst, loves you anyway",
+  "adjective": "worried",
+  "faces": ["🥰", "🙂", "😟", "😰", "😱"],
+  "schedule": [
+    { "at": -13, "text": "candles are lit. you're on your way right? 🕯️" },
+    { "at": -10, "text": "where are you?", "replies": "where" },
+    { "at": -7, "text": "told my mom you're never late 🙂" },
+    { "at": -4, "text": "you're quiet. are you ok?", "replies": "four" },
+    { "at": 0, "text": "it's {deadline}. i'm not panicking.", "replies": "deadline" },
+    { "at": 2, "text": "ok i'm panicking a little", "replies": "ok" },
+    { "at": 5, "text": "the {food} is fine. i'm not fine.", "replies": "cold" },
+    { "at": 8, "text": "i called your mom. she said you're \"probably fine\"" },
+    { "at": 11, "text": "i'm checking the news" },
+    { "at": 14, "text": "is that a siren or am i imagining things" },
+    { "at": 18, "text": "i've drafted 3 search party posts" },
+    { "at": 22, "text": "the cat is also worried" },
+    { "at": 26, "text": "i'm putting my shoes on to come find you" },
+    { "at": 30, "text": "if you're reading this blink twice" }
+  ],
+  "replies": {
+    "where": [
+      { "text": "omw!! 🏃", "mood": 6, "answer": "ok good. text me when you cross the big street" },
+      { "text": "5 min ❤️", "mood": 7, "promiseMinutes": 5, "answer": "5 min. ok. i'm timing it" }
+    ],
+    "four": [
+      { "text": "all good!!", "mood": 5 },
+      { "text": "phone's at 3%", "mood": 1, "answer": "WHAT. come home NOW" }
+    ],
+    "deadline": [
+      { "text": "2 min!! ❤️", "mood": 5, "promiseMinutes": 2 },
+      { "text": "i'm fine i promise", "mood": 4, "answer": "that's what people say in movies" }
+    ],
+    "ok": [
+      { "text": "don't worry!!", "mood": -1, "answer": "that makes it worse" },
+      { "text": "i have cake 🎂", "mood": 6, "claimsCake": true, "answer": "i don't care about the cake. ok i care a little" }
+    ],
+    "cold": [
+      { "text": "almost there!!", "mood": 3 },
+      { "text": "you worry too much 🙄", "mood": -4, "answer": "i'm putting that on a mug" }
+    ]
+  },
+  "reactions": {
+    "puddle": "did you just step in a puddle?? you'll catch a cold",
+    "banana": "your dot just slid sideways. what happened. tell me what happened",
+    "cone": "did you trip?? is anything broken??",
+    "hydrant": "why is your location suddenly inside a fire hydrant",
+    "dog": "IS THAT DOG FRIENDLY. do not pet it",
+    "skater": "a skateboard?? are you hurt??",
+    "pigeons": "you're near pigeons. do not touch the pigeons",
+    "hole": "YOUR DOT JUST DISAPPEARED",
+    "run": "why are you running. what are you running from",
+    "fall3": "that's 3 falls. i'm coming to get you",
+    "fall5": "ok i'm calling your mom"
+  },
+  "promiseBroken": "you said {min} min. it's been {min} min. are you alive",
+  "endings": [
+    {
+      "minScore": 100,
+      "rank": "Safe and Sound",
+      "line": "YOU'RE HOME. and you brought cake 🥹 never scare me like that",
+      "lineWithoutCake": "YOU'RE HOME. who cares about the cake 🥹"
+    },
+    { "minScore": 80, "rank": "Relieved", "line": "oh thank god. come here." },
+    { "minScore": 60, "rank": "Shaken", "line": "i aged ten years tonight. sit down." },
+    { "minScore": 40, "rank": "Search Party", "line": "you're here?? i just called your mom. she's on her way." },
+    { "minScore": -1000, "rank": "Missing Person", "line": "i made posters." }
+  ],
+  "extras": {
+    "cakeLie": "you said you had cake. i was worried about the cake too",
+    "cakeOnShirt": "...is that cake? are you bleeding cake?",
+    "flowers": "you stopped for FLOWERS?? ok they're beautiful 😭"
+  }
+}

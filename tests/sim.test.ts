@@ -36,7 +36,15 @@ describe('content data', () => {
     expect(Math.max(...xs)).toBeLessThan(r.length - 200);
     expect(Math.min(...xs)).toBeGreaterThan(500);
     for (const o of r.obstacles) if (o.type === 'flower') expect(o.height).toBeDefined();
-    for (const o of r.obstacles) if (o.type !== 'flower') expect(script.reactions[o.type]).toBeDefined();
+    for (const sc of SCRIPTS) for (const o of r.obstacles) if (o.type !== 'flower') expect(sc.reactions[o.type], `${sc.id} reacts to ${o.type}`).toBeDefined();
+  });
+
+  it.each(SCRIPTS.map(sc => [sc.id, sc] as const))('personality %s is complete', (_id, sc) => {
+    expect(sc.adjective).toMatch(/^[a-z]+$/);
+    if (sc.faces) expect(sc.faces).toHaveLength(5);
+    for (const k of ['run', 'fall3', 'fall5']) expect(sc.reactions[k], `${sc.id} reacts to ${k}`).toBeDefined();
+    expect(sc.promiseBroken).toContain('{min}');
+    for (const opts of Object.values(sc.replies)) expect(opts.length).toBeGreaterThanOrEqual(2);
   });
 
   it('every reply key used by the script exists', () => {

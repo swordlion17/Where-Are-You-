@@ -1,6 +1,6 @@
 import { sfx, unlockAudio } from '../audio/sfx';
 import { PLAY_URL } from '../config';
-import { routeById, SCRIPTS } from '../data';
+import { routeById, scriptById } from '../data';
 import { analytics } from '../platform/analytics';
 import { buzz, shareText } from '../platform/device';
 import { load, save } from '../platform/storage';
@@ -24,6 +24,7 @@ export interface Ui { phone: Phone; hud: Hud; controls: Controls; start: StartSc
 
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 const DUSK = parseClock('7:44');
+const DEFAULT_FACES = ['🥰', '🙂', '😐', '🙃', '😶'];
 const COLORS = { cream: '#fff6ef', pink: '#ff9ec4', amber: '#ffc857', rose: '#ff6b8f', blush: '#ffd6e7' };
 
 /**
@@ -38,7 +39,8 @@ export class Game {
   clock = 0;
   partnerName = 'Sam';
   relation: Relation = 'girlfriend';
-  readonly script: Script = SCRIPTS[0];
+  /** The partner's personality: who texts, and how. */
+  script: Script = scriptById(undefined);
   readonly reducedMotion: boolean;
   private ui: Ui | null = null;
   private fx: FxEvent[] = [];
@@ -82,6 +84,7 @@ export class Game {
     unlockAudio();
     this.partnerName = c.name;
     this.relation = c.relation;
+    this.script = scriptById(c.personality);
     this.route = routeById(c.routeId);
     this.newRun();
     this.state = 'play';
@@ -94,7 +97,7 @@ export class Game {
     this.attempt++;
     this.runStartedAt = performance.now();
     analytics.track('run_started', {
-      route: this.route.id, relation: this.relation, attempt: this.attempt,
+      route: this.route.id, relation: this.relation, personality: this.script.id, attempt: this.attempt,
       // Whether the options were opened and the name changed from the default; never the name itself.
       customized: c.customized ?? false, own_name: c.name !== 'Sam',
     });
@@ -146,7 +149,7 @@ export class Game {
       `Where Are You? 🏠 ${this.route.title}`,
       `Home at ${r.arrival} (${r.lateText})`,
       `🎂 cake ${r.cake}% · 💥 ${this.world.falls} falls · 🌹 ${this.world.flowers}/${this.world.flowerTotal}`,
-      `My ${this.relation} ${this.partnerName}: "${r.line}"`,
+      `My ${this.script.adjective} ${this.relation} ${this.partnerName}: "${r.line}"`,
       `Rank: ${r.rank}`,
     ];
     if (PLAY_URL) lines.push(`Play: ${PLAY_URL}`);
@@ -262,13 +265,13 @@ export class Game {
       replied: this.convo.replied, left_on_read: this.convo.ignored,
     });
     this.card = renderShareCard({
-      name: this.partnerName, relation: this.relation, route: this.route.title, arrival: r.arrival, lateText: r.lateText,
+      name: this.partnerName, relation: `${this.script.adjective} ${this.relation}`, route: this.route.title, arrival: r.arrival, lateText: r.lateText,
       rank: r.rank, messages: this.chat.slice(-8), cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`,
       ignored: this.convo.ignored, url: PLAY_URL,
     }).then(b => new File([b], 'where-are-you.png', { type: 'image/png' })).catch(() => null);
     this.ui!.end.show({
       arrival: r.arrival, lateText: r.lateText, rank: r.rank, line: r.line,
-      from: `${this.partnerName}, your ${this.relation}`,
+      from: `${this.partnerName}, your ${this.script.adjective} ${this.relation}`,
       cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`, ignored: this.convo.ignored,
     });
   }
@@ -279,7 +282,8 @@ export class Game {
     ui.phone.setClock(fmtClock(this.clock), this.clock > deadline);
     ui.phone.setBattery(Math.max(1, 23 - Math.floor(((this.clock - parseClock(this.route.start)) / 60) * 0.7)));
     const m = this.convo.mood;
-    ui.phone.setMood(m >= 85 ? '🥰' : m >= 65 ? '🙂' : m >= 45 ? '😐' : m >= 25 ? '🙃' : '😶');
+    const faces = this.script.faces ?? DEFAULT_FACES;
+    ui.phone.setMood(faces[m >= 85 ? 0 : m >= 65 ? 1 : m >= 45 ? 2 : m >= 25 ? 3 : 4]);
     ui.hud.set(Math.round(w.cake), w.flowers, w.flowerTotal, Math.ceil(w.distanceLeft / 20));
   }
 }

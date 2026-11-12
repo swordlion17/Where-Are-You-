@@ -61,11 +61,13 @@ export class GameScene extends Phaser.Scene {
   private parts: Particle[] = [];
   private floats: FloatText[] = [];
   private stars: { x: number; y: number; s: number; p: number }[] = [];
+  private rain!: Gfx;
+  private drops: { x: number; y: number; len: number; v: number }[] = [];
   private builtFor: World | null = null;
 
   private W = 1; private H = 1; private dpr = 1; private S = 1; private GY = 1;
   private portrait = true; private bgK = 1; private skyTop = 0;
-  private camX = 0; private shake = 0; private elapsed = 0;
+  private camX = 0; private shake = 0; private elapsed = 0; private frameDt = 0;
 
   /** Set by main.ts; called once the scene exists so the first layout can run. */
   onCreated: (() => void) | null = null;
@@ -107,6 +109,10 @@ export class GameScene extends Phaser.Scene {
 
     const rnd = Phaser.Math.RND;
     this.stars = Array.from({ length: 70 }, () => ({ x: rnd.frac(), y: rnd.frac(), s: rnd.realInRange(0.5, 1.9), p: rnd.realInRange(0, 6) }));
+    // Rain is drawn in screen space in front of the street, under the floating text.
+    this.rain = this.add.graphics();
+    this.uiLayer.add(this.rain);
+    this.drops = Array.from({ length: 150 }, () => ({ x: rnd.frac(), y: rnd.frac(), len: rnd.realInRange(0.6, 1.2), v: rnd.realInRange(0.9, 1.3) }));
     this.created = true;
     this.onCreated?.();
   }
@@ -151,6 +157,7 @@ export class GameScene extends Phaser.Scene {
   override update(_time: number, deltaMs: number): void {
     const dt = Math.min(0.033, Math.max(0, deltaMs / 1000));
     this.elapsed += dt;
+    this.frameDt = dt;
     this.game2.update(dt);
     const w = this.game2.world;
     if (w !== this.builtFor) this.buildRun(w);
@@ -276,10 +283,12 @@ export class GameScene extends Phaser.Scene {
   // ------------------------------------------------------------------ drawing
 
   private draw(w: World): void {
-    const n = this.game2.night;
+    const raining = this.game2.route.weather === 'rain';
+    // Rain clouds make it dusk early: darker sky, tinted street, lamps on.
+    const n = raining ? Math.max(this.game2.night, 0.55) : this.game2.night;
     const sx = this.shake > 0 && !this.game2.reducedMotion ? (Math.random() - 0.5) * this.shake * 10 * this.dpr : 0;
     const sy = this.shake > 0 && !this.game2.reducedMotion ? (Math.random() - 0.5) * this.shake * 8 * this.dpr : 0;
-    this.drawSky(n);
+    this.drawSky(n, raining);
     this.drawParallax(n, sx, sy);
 
     const viewW = this.W / this.S;
@@ -297,27 +306,47 @@ export class GameScene extends Phaser.Scene {
     this.drawSidewalk(w, n, x0, x1);
     this.drawActors(w, x0, x1);
     this.drawStreet(n, x0, x1);
+    this.drawRain(raining);
     this.drawFloats();
   }
 
-  private drawSky(n: number): void {
+  private drawRain(raining: boolean): void {
+    const g = this.rain;
+    g.clear();
+    if (!raining || this.game2.reducedMotion) return;
+    const W = this.W, H = this.H, dt = this.frameDt;
+    const len = 22 * this.dpr, slant = 0.22;
+    g.lineStyle(1.4 * this.dpr, 0xc9d3ff, 0.32);
+    for (const d of this.drops) {
+      d.y += d.v * dt * 1.6;
+      d.x -= d.v * dt * 1.6 * slant * (H / W);
+      if (d.y > 1) { d.y -= 1; d.x = Math.random(); }
+      if (d.x < 0) d.x += 1;
+      const x = d.x * W, y = d.y * H, l = len * d.len;
+      g.lineBetween(x, y, x + l * slant, y - l);
+    }
+  }
+
+  private drawSky(n: number, overcast: boolean): void {
     const g = this.sky, W = this.W, H = this.H, GY = this.GY;
     g.clear();
-    const top = mix(0x33255f, 0x090820, n), mid = mix(0x9c4f86, 0x1d1842, n), low = mix(0xffb07a, 0x3b2c5e, n);
+    let top = mix(0x33255f, 0x090820, n), mid = mix(0x9c4f86, 0x1d1842, n), low = mix(0xffb07a, 0x3b2c5e, n);
+    if (overcast) { top = mix(top, 0x2c3045, 0.6); mid = mix(mid, 0x3c4258, 0.6); low = mix(low, 0x55596e, 0.6); }
     g.fillStyle(mix(0x2b2350, 0x14112a, n), 1); g.fillRect(0, 0, W, H);
     g.fillGradientStyle(top, top, mid, mid, 1); g.fillRect(0, 0, W, GY * 0.55);
     g.fillGradientStyle(mid, mid, low, low, 1); g.fillRect(0, GY * 0.55 - 1, W, GY * 0.45 + 2);
-    if (n > 0.05) {
+    if (n > 0.05 && !overcast) {
       for (const s of this.stars) {
         g.fillStyle(0xfff6ef, n * (0.55 + 0.45 * Math.sin(this.elapsed * 1.7 + s.p)));
         g.fillRect(s.x * W, s.y * GY * 0.8, s.s * this.dpr, s.s * this.dpr);
       }
     }
     const sunX = W * 0.7, sunY = GY - (150 * this.bgK - n * 190) * this.S;
-    g.fillStyle(0xffd796, 1 - n); g.fillCircle(sunX, sunY, 40 * this.S);
-    this.sunGlow.setPosition(sunX, sunY).setScale((this.S * 1.4) / TEX_SCALE).setAlpha(0.6 * (1 - n));
+    const sun = overcast ? 0 : 1 - n;
+    g.fillStyle(0xffd796, sun); g.fillCircle(sunX, sunY, 40 * this.S);
+    this.sunGlow.setPosition(sunX, sunY).setScale((this.S * 1.4) / TEX_SCALE).setAlpha(0.6 * sun);
     const moonY = this.portrait ? Math.max(this.skyTop + 46 * this.S, GY - 430 * this.S) : Math.max(GY * 0.42, GY - 430 * this.S);
-    this.moon.setPosition(W * 0.84, moonY).setScale(this.S / TEX_SCALE).setAlpha(clamp((n - 0.2) / 0.8, 0, 1));
+    this.moon.setPosition(W * 0.84, moonY).setScale(this.S / TEX_SCALE).setAlpha(overcast ? 0 : clamp((n - 0.2) / 0.8, 0, 1));
   }
 
   private drawParallax(n: number, sx: number, sy: number): void {

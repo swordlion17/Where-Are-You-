@@ -1,4 +1,4 @@
-import { ROUTES } from '../data';
+import { ROUTES, SCRIPTS, scriptById } from '../data';
 import { fmtClock, parseClock } from '../sim/clock';
 import type { Relation } from '../sim/types';
 import { load, save } from '../platform/storage';
@@ -8,6 +8,8 @@ export interface StartChoice {
   name: string;
   relation: Relation;
   routeId: string;
+  /** Script id: what the partner is like. */
+  personality: string;
   /** The player opened the options this visit (for play stats; not saved). */
   customized?: boolean;
 }
@@ -24,6 +26,8 @@ export class StartScreen {
   private readonly form = byId<HTMLFormElement>('startForm');
   private readonly nameInput = byId<HTMLInputElement>('partnerName');
   private readonly routeList = byId('routeList');
+  private readonly personalityList = byId('personalityList');
+  private readonly personalityHint = byId('personalityHint');
   private readonly nameLabel = byId('nameLabel');
   private readonly panel = byId('setupPanel');
   private readonly toggle = byId<HTMLButtonElement>('setupToggle');
@@ -37,6 +41,7 @@ export class StartScreen {
     if (saved.name) this.nameInput.value = saved.name;
     const rel = RELATIONS.includes(saved.relation as Relation) ? (saved.relation as Relation) : 'girlfriend';
     (this.form.querySelector(`input[name="relation"][value="${rel}"]`) as HTMLInputElement | null)?.click();
+    this.renderPersonalities(scriptById(saved.personality).id);
     this.renderRoutes(saved.routeId ?? ROUTES[0].id);
     this.refresh();
     this.toggle.addEventListener('click', () => this.setOpen(this.toggle.getAttribute('aria-expanded') !== 'true'));
@@ -63,7 +68,8 @@ export class StartScreen {
     const name = (String(data.get('partner') ?? '').trim() || 'Sam').slice(0, 14);
     const relation = (RELATIONS.find(r => r === data.get('relation')) ?? 'girlfriend');
     const routeId = String(data.get('route') ?? ROUTES[0].id);
-    return { name, relation, routeId };
+    const personality = scriptById(String(data.get('personality') ?? '')).id;
+    return { name, relation, routeId, personality };
   }
 
   /** `options: true` opens the setup right away (coming from "Pick another night"). */
@@ -91,12 +97,26 @@ export class StartScreen {
     const name = document.createElement('b');
     name.textContent = c.name;
     const route = ROUTES.find(r => r.id === c.routeId)?.title ?? '';
-    this.summary.replaceChildren(name, `, your ${c.relation} · ${route}`);
+    const script = scriptById(c.personality);
+    this.summary.replaceChildren(name, `, your ${script.adjective} ${c.relation} · ${route}`);
+    setText(this.personalityHint, script.name);
   }
 
   /** So Enter or Space starts the game on a keyboard. */
   private focusStart(): void {
     try { this.startBtn.focus({ preventScroll: true }); } catch { /* ignore */ }
+  }
+
+  private renderPersonalities(selected: string): void {
+    this.personalityList.replaceChildren(...SCRIPTS.map(sc => {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio'; input.name = 'personality'; input.value = sc.id; input.checked = sc.id === selected;
+      const chip = document.createElement('span');
+      chip.textContent = sc.adjective;
+      label.append(input, chip);
+      return label;
+    }));
   }
 
   private renderRoutes(selected: string): void {

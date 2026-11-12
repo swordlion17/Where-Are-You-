@@ -163,6 +163,8 @@ a.link { align-self: center; }
 .setup b { color: var(--ink); }
 .setup .link { padding: 2px 4px; font-size: 14px; color: var(--coral-deep); }
 #setupPanel { display: flex; flex-direction: column; gap: 10px; }
+.seg-row { display: contents; }
+.hint { width: 100%; font-size: 13px; color: var(--muted); }
 h2 { margin: 0; font: 800 clamp(30px, 9vw, 40px)/1.02 var(--f-display); letter-spacing: -0.03em; text-wrap: balance; }
 .final { display: flex; flex-direction: column; gap: 4px; }
 .from { font: 600 12px var(--f-phone); color: var(--muted); padding-left: 6px; }
