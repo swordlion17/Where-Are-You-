@@ -30,6 +30,12 @@ const SKYLINE_TOP = 250; // tallest building in the skyline texture
 export interface Frame { w: number; h: number; dpr: number; top: number; bottom: number }
 
 const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
+/** Per-channel multiply of two 0xRRGGBB colors (how tints combine). */
+function multiply(a: number, b: number): number {
+  const ch = (s: number) => Math.round((((a >> s) & 255) * ((b >> s) & 255)) / 255) << s;
+  return ch(16) | ch(8) | ch(0);
+}
+
 function mix(a: number, b: number, t: number): number {
   const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
   const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
@@ -224,10 +230,18 @@ export class GameScene extends Phaser.Scene {
     for (const e of this.game2.drainFx()) {
       switch (e.type) {
         case 'splat': {
-          this.place('splat', e.x, 0, 4);
+          const soup = w.item.id === 'soup';
+          const decal = this.place('splat', e.x, 0, 4);
+          if (soup) decal.setData('baseTint', 0xe0893c); // multiplied with the time-of-day tint in draw()
           this.shake = Math.max(this.shake, 0.5);
-          const cols = [0xff9ec4, 0xfff0f6, 0xc98a5b, 0xff6b8f];
+          const cols = soup ? [0xe8893a, 0xf2b25c, 0xc8642a, 0xffd28a] : [0xff9ec4, 0xfff0f6, 0xc98a5b, 0xff6b8f];
           for (let i = 0; i < 22; i++) { const a = -Math.PI * Math.random(), v = 120 + Math.random() * 260; this.parts.push({ x: e.x, y: -4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.8 + Math.random() * 0.5, r: 1.8 + Math.random() * 3, color: cols[i % 4], g: 1 }); }
+          break;
+        }
+        case 'spill': {
+          // A few drops over the rim, flung the way the pot is tipping.
+          const h = handsCenter(w.pose()), dir = Math.sign(w.p.tilt) || 1;
+          for (let i = 0; i < 2; i++) this.parts.push({ x: h.x + dir * 9, y: h.y - 8, vx: w.p.speed * 0.6 + dir * (30 + Math.random() * 60), vy: -40 - Math.random() * 90, life: 0.7, r: 1.4 + Math.random() * 1.2, color: i ? 0xf2b25c : 0xe8893a, g: 1 });
           break;
         }
         case 'fall':
@@ -299,7 +313,8 @@ export class GameScene extends Phaser.Scene {
     for (const o of this.runObjs) {
       const img = o as Img;
       if (img.texture?.key === 'glow' || img.texture?.key === 'door-open' || !('setTint' in img)) continue;
-      img.setTint(tint);
+      const base = img.getData('baseTint') as number | undefined;
+      img.setTint(base === undefined ? tint : multiply(base, tint));
     }
     this.updateObstacleSprites(w);
     this.updateLamps(n);
@@ -442,7 +457,7 @@ export class GameScene extends Phaser.Scene {
       if (p.mode !== 'hole') { g.fillStyle(0x140e28, 0.25); g.fillEllipse(j.hip.x, 1, 32 * (1 - clamp(-p.y / 220, 0, 0.6)), 6); }
       this.drawPerson(g, j, w.holdingCake ? { tilt: p.tilt, hp: w.cake } : null, w.dazed);
     }
-    if (w.flyCake) this.drawCake(g, w.flyCake.x, w.flyCake.y, w.flyCake.rot, w.flyCake.hp);
+    if (w.flyCake) this.drawItem(g, w.flyCake.x, w.flyCake.y, w.flyCake.rot, w.flyCake.hp);
     for (const q of this.parts) {
       const a = Math.min(1, q.life / 0.4);
       if (q.bird) {
@@ -484,7 +499,7 @@ export class GameScene extends Phaser.Scene {
     this.limb(g, [j.hip, j.kneeL, j.footL], 7.5, COLORS.pants);
     g.fillStyle(COLORS.shoe, 1); g.fillEllipse(j.footL.x + 2.5, j.footL.y - 1, 10, 6);
     this.drawHead(g, j, dazed);
-    if (cake) { const h = handsCenter(j); this.drawCake(g, h.x, h.y, cake.tilt, cake.hp); }
+    if (cake) { const h = handsCenter(j); this.drawItem(g, h.x, h.y, cake.tilt, cake.hp); }
     this.limb(g, [j.neck, j.elbowL, j.handL], 5.5, COLORS.shirt);
     g.fillStyle(COLORS.skin, 1); g.fillCircle(j.handL.x, j.handL.y, 3);
   }
@@ -501,6 +516,34 @@ export class GameScene extends Phaser.Scene {
     } else { g.fillStyle(COLORS.ink, 1); g.fillCircle(5, -0.5, 1.5); }
     g.fillStyle(0xff6e82, 0.45); g.fillCircle(4, 4, 2.4);
     g.restore();
+  }
+
+  private drawItem(g: Gfx, x: number, y: number, rot: number, hp: number): void {
+    if (this.game2.world.item.id === 'soup') this.drawSoup(g, x, y, rot, hp);
+    else this.drawCake(g, x, y, rot, hp);
+  }
+
+  /** A pot carried by both handles: soup level follows `hp`, steam while there's enough left. */
+  private drawSoup(g: Gfx, x: number, y: number, rot: number, hp: number): void {
+    g.save(); g.translateCanvas(x, y); g.rotateCanvas(rot);
+    const w = 13, h = 15, f = Math.max(0, hp) / 100;
+    g.fillStyle(0x2f3550, 1); g.fillRoundedRect(-w - 6, -h + 2, 6, 3.4, 1.5); g.fillRoundedRect(w, -h + 2, 6, 3.4, 1.5);
+    g.fillStyle(0x434c6b, 1); g.fillRoundedRect(-w, -h, 2 * w, h, { tl: 2, tr: 2, bl: 6, br: 6 });
+    g.fillStyle(0x59648a, 1); g.fillRect(-w + 3, -h + 4, 3, h - 7);
+    g.fillStyle(0x2a2f47, 1); g.fillEllipse(0, -h, 2 * w + 2, 7);
+    if (f > 0) {
+      g.fillStyle(0xe8893a, 1); g.fillEllipse(0, -h + 0.5, (2 * w - 2) * (0.45 + 0.55 * f), 4.4 * (0.5 + 0.5 * f));
+      g.fillStyle(0xf6b35f, 1); g.fillEllipse(-3, -h, 5 * f + 1, 1.4);
+    }
+    g.restore();
+    if (f > 0.3) {
+      // Steam stays upright whatever the pot does.
+      for (let i = 0; i < 3; i++) {
+        const t = (this.elapsed * 0.9 + i / 3) % 1;
+        g.fillStyle(0xffffff, 0.35 * (1 - t) * f);
+        g.fillCircle(x - 6 + i * 6 + Math.sin(this.elapsed * 3 + i * 2) * 2, y - h - 4 - t * 16, 2.2 + t * 2.5);
+      }
+    }
   }
 
   private drawCake(g: Gfx, x: number, y: number, rot: number, hp: number): void {

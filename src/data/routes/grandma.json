@@ -1,0 +1,31 @@
+{
+  "id": "grandma",
+  "title": "Grandma's Soup",
+  "blurb": "Grandma's famous soup, full to the brim, by 7:00. Running spills it.",
+  "item": "soup",
+  "start": "6:44",
+  "deadline": "7:00",
+  "length": 7000,
+  "intro": ["grandma made her famous soup for us 🍲", "she says if you spill it she'll know"],
+  "vars": { "food": "bread" },
+  "obstacles": [
+    { "type": "puddle", "x": 700 },
+    { "type": "flower", "x": 950, "height": "low" },
+    { "type": "cone", "x": 1200 },
+    { "type": "banana", "x": 1500 },
+    { "type": "pigeons", "x": 1750 },
+    { "type": "hydrant", "x": 2000 },
+    { "type": "dog", "x": 2800 },
+    { "type": "flower", "x": 3050, "height": "high" },
+    { "type": "hole", "x": 3350 },
+    { "type": "cone", "x": 3700 },
+    { "type": "puddle", "x": 4000 },
+    { "type": "skater", "x": 4650 },
+    { "type": "flower", "x": 4950, "height": "high" },
+    { "type": "banana", "x": 5250 },
+    { "type": "hole", "x": 5550 },
+    { "type": "dog", "x": 6100 },
+    { "type": "flower", "x": 6400, "height": "low" },
+    { "type": "cone", "x": 6700 }
+  ]
+}

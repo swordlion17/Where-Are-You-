@@ -34,7 +34,7 @@
     ],
     "ok": [
       { "text": "don't worry!!", "mood": -1, "answer": "that makes it worse" },
-      { "text": "i have cake 🎂", "mood": 6, "claimsCake": true, "answer": "i don't care about the cake. ok i care a little" }
+      { "text": "i have {item} {itemEmoji}", "mood": 6, "claimsCake": true, "answer": "i don't care about the {item}. ok i care a little" }
     ],
     "cold": [
       { "text": "almost there!!", "mood": 3 },
@@ -52,6 +52,7 @@
     "hole": "YOUR DOT JUST DISAPPEARED",
     "run": "why are you running. what are you running from",
     "fall3": "that's 3 falls. i'm coming to get you",
+    "spill": "is it hot?? did you burn yourself??",
     "fall5": "ok i'm calling your mom"
   },
   "promiseBroken": "you said {min} min. it's been {min} min. are you alive",
@@ -59,8 +60,8 @@
     {
       "minScore": 100,
       "rank": "Safe and Sound",
-      "line": "YOU'RE HOME. and you brought cake 🥹 never scare me like that",
-      "lineWithoutCake": "YOU'RE HOME. who cares about the cake 🥹"
+      "line": "YOU'RE HOME. and you brought {item} 🥹 never scare me like that",
+      "lineWithoutCake": "YOU'RE HOME. who cares about the {item} 🥹"
     },
     { "minScore": 80, "rank": "Relieved", "line": "oh thank god. come here." },
     { "minScore": 60, "rank": "Shaken", "line": "i aged ten years tonight. sit down." },
@@ -68,8 +69,8 @@
     { "minScore": -1000, "rank": "Missing Person", "line": "i made posters." }
   ],
   "extras": {
-    "cakeLie": "you said you had cake. i was worried about the cake too",
-    "cakeOnShirt": "...is that cake? are you bleeding cake?",
+    "cakeLie": "you said you had {item}. i was worried about the {item} too",
+    "cakeOnShirt": "...is that {item}? are you bleeding {item}?",
     "flowers": "you stopped for FLOWERS?? ok they're beautiful 😭"
   }
 }

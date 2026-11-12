@@ -33,7 +33,7 @@
     ],
     "ok": [
       { "text": "don't be mad", "mood": -1, "answer": "i'm not mad." },
-      { "text": "i have cake 🎂", "mood": 6, "claimsCake": true }
+      { "text": "i have {item} {itemEmoji}", "mood": 6, "claimsCake": true }
     ],
     "cold": [
       { "text": "i can reheat it!", "mood": 2, "answer": "it's {food}, not a hot pocket" },
@@ -55,19 +55,20 @@
     "hole": "your location just went underground??",
     "run": "why is your little dot moving so fast lol",
     "fall3": "are you ok?? your dot keeps falling over",
+    "spill": "you're spilling it aren't you",
     "fall5": "should i call someone 😟"
   },
   "promiseBroken": "you said {min} min. that was {min} min ago.",
   "endings": [
-    { "minScore": 100, "rank": "Partner of the Year", "line": "you're here!! and you brought cake 🥹", "lineWithoutCake": "you're here!! 🥹 get in here" },
+    { "minScore": 100, "rank": "Partner of the Year", "line": "you're here!! and you brought {item} 🥹", "lineWithoutCake": "you're here!! 🥹 get in here" },
     { "minScore": 80, "rank": "Forgiven", "line": "you're lucky you're cute. come in" },
     { "minScore": 60, "rank": "On Thin Ice", "line": "the {food} is cold. sit down." },
     { "minScore": 40, "rank": "Couch Tonight", "line": "the door's open. the {food} isn't." },
     { "minScore": -1000, "rank": "Blocked", "line": "new phone who dis" }
   ],
   "extras": {
-    "cakeLie": "you said you had cake.",
-    "cakeOnShirt": "...why is there cake on your shirt",
+    "cakeLie": "you said you had {item}.",
+    "cakeOnShirt": "...why is there {item} on your shirt",
     "flowers": "wait are those flowers?? ok fine 🙄❤️"
   }
 }

@@ -22,7 +22,7 @@
         <div id="replies" hidden></div>
       </div>
       <div id="hud">
-        <span class="chip" id="cakeChip" title="Cake left">🎂 <span id="hudCake">100%</span></span>
+        <span class="chip" id="cakeChip" title="Cake left"><span id="hudItemIcon">🎂</span> <span id="hudCake">100%</span></span>
         <span class="chip" title="Flowers picked up">🌹 <span id="hudFlowers">0/0</span></span>
         <span class="chip" title="Distance to home">🏠 <span id="hudDist">0 m</span></span>
         <button class="chip btn" id="muteBtn" type="button" aria-pressed="false" aria-label="Mute sound">🔊</button>
@@ -39,7 +39,7 @@
         <p class="eyebrow">Dinner is waiting</p>
         <div class="title-bubble"><h1>where are you?</h1></div>
         <span class="tdots" aria-hidden="true"><i></i><i></i><i></i></span>
-        <p class="lede">You promised to bring the cake. One sidewalk, a deadline, and a phone that won't stop buzzing.</p>
+        <p class="lede">You promised to bring the <span id="ledeItem">cake</span>. One sidewalk, a deadline, and a phone that won't stop buzzing.</p>
         <form id="startForm">
           <p class="setup">
             <span id="setupSummary"><b>Sam</b>, your girlfriend · Tuesday Dinner</span>
@@ -76,7 +76,7 @@
         <h2 id="endRank">Forgiven</h2>
         <div class="final"><span class="from" id="endFrom">Sam</span><p class="bub her" id="endText">get in here</p></div>
         <dl class="stats">
-          <div><dt>Cake left</dt><dd id="stCake">0%</dd></div>
+          <div><dt id="stItemLabel">Cake left</dt><dd id="stCake">0%</dd></div>
           <div><dt>Falls</dt><dd id="stFalls">0</dd></div>
           <div><dt>Flowers</dt><dd id="stFlowers">0</dd></div>
           <div><dt>Left on read</dt><dd id="stIgnored">0</dd></div>

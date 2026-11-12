@@ -94,6 +94,13 @@ export const CLIPS: Record<string, ClipPlan> = {
     ],
   },
 
+  // Grandma's soup at a full sprint: it sloshes, a banana sends it flying, and they notice.
+  'soup-spill': {
+    route: 'grandma',
+    warm: { from: -13, seconds: 9 },
+    segments: [{ set: { x: 1150 }, hit: [1500], until: { text: 'spilling' }, tail: 2.5, freeze: true }],
+  },
+
   // Anniversary night: "omw!!", then straight into a hole. Short on purpose; loops well.
   underground: {
     route: 'anniversary',

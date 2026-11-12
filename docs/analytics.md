@@ -9,7 +9,7 @@ Anonymous events from the game tell us whether people who arrive from a clip act
 | `game_loaded` | Page opens | portrait or not |
 | `run_started` | Start walking / Walk again | route, relation (girlfriend/boyfriend/partner), attempt number this visit, whether the options were opened, whether a name other than "Sam" was typed (never the name) |
 | `reply_tapped` | A reply is tapped | route, which text it answered (`where`, `four`...), which option |
-| `run_finished` | End screen appears | route, attempt, seconds, rank, score, minutes late (negative = early), cake %, falls, flowers, replies, left on read |
+| `run_finished` | End screen appears | route, attempt, seconds, rank, score, minutes late (negative = early), item (cake/soup), what was left of it (%) and how much spilled, falls, flowers, replies, left on read |
 | `share_tapped` | Share result | route, rank, outcome (`image` = picture shared, `shared` = text only, `copied`, `failed`) |
 | `run_quit` | Page closed mid-run | route, attempt, seconds, how far along (0–1), falls, cake % |
 

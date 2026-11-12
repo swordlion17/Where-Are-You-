@@ -4,9 +4,10 @@ import worried from './scripts/worried.json';
 import tuesday from './routes/tuesday.json';
 import anniversary from './routes/anniversary.json';
 import parents from './routes/parents.json';
+import grandma from './routes/grandma.json';
 
 /** Routes in the order they appear on the start screen. */
-export const ROUTES: RouteDef[] = [tuesday as RouteDef, anniversary as RouteDef, parents as RouteDef];
+export const ROUTES: RouteDef[] = [tuesday as RouteDef, anniversary as RouteDef, grandma as RouteDef, parents as RouteDef];
 /** Partner personalities; the first is the default. */
 export const SCRIPTS: Script[] = [classic as Script, worried as Script];
 

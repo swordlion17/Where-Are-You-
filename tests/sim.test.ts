@@ -42,7 +42,7 @@ describe('content data', () => {
   it.each(SCRIPTS.map(sc => [sc.id, sc] as const))('personality %s is complete', (_id, sc) => {
     expect(sc.adjective).toMatch(/^[a-z]+$/);
     if (sc.faces) expect(sc.faces).toHaveLength(5);
-    for (const k of ['run', 'fall3', 'fall5']) expect(sc.reactions[k], `${sc.id} reacts to ${k}`).toBeDefined();
+    for (const k of ['run', 'fall3', 'fall5', 'spill']) expect(sc.reactions[k], `${sc.id} reacts to ${k}`).toBeDefined();
     expect(sc.promiseBroken).toContain('{min}');
     for (const opts of Object.values(sc.replies)) expect(opts.length).toBeGreaterThanOrEqual(2);
   });
@@ -155,5 +155,48 @@ describe('scoring', () => {
     const r = scoreRun({ mood: 60, cake: 10, flowers: 0, arrivedAt: deadline + 60, cakeClaim: true }, route, script);
     expect(r.lines).toContain('you said you had cake.');
     expect(r.line).toContain('pasta');
+  });
+});
+
+describe('soup', () => {
+  const soupNights = ROUTES.filter(r => r.item === 'soup');
+
+  /** Average soup left over several seeds, and whether every run made it on time. */
+  function pace(route: RouteDef, run: (t: number) => boolean) {
+    let soup = 0, onTime = true;
+    const seeds = 10;
+    for (let seed = 1; seed <= seeds; seed++) {
+      const w = new World(route, mulberry32(seed));
+      let t = 0, arrived = false, running = false;
+      while (!arrived && t < 180) {
+        // Like a player: the RUN button stays as it was until you land (letting go mid-jump shortens it).
+        if (w.p.onGround) running = run(t);
+        arrived = w.step(DT, { run: running, jump: shouldJump(w) }, true).some(e => e.type === 'arrive');
+        t += DT;
+      }
+      soup += w.cake;
+      onTime &&= arrived && parseClock(route.start) + t * TIME_SCALE <= parseClock(route.deadline);
+    }
+    return { soup: soup / seeds, onTime };
+  }
+
+  it('there is a soup night', () => { expect(soupNights.length).toBeGreaterThan(0); });
+
+  it.each(soupNights.map(r => [r.id, r] as const))('sprinting %s spills most of the soup', (_id, r) => {
+    const { soup, onTime } = pace(r, () => true);
+    expect(onTime).toBe(true);
+    expect(soup).toBeLessThan(50);
+  });
+
+  it.each(soupNights.map(r => [r.id, r] as const))('a steady pace on %s saves most of it and is still on time', (_id, r) => {
+    const { soup, onTime } = pace(r, t => t % 3 < 1); // run one second in three
+    expect(onTime).toBe(true);
+    expect(soup).toBeGreaterThan(50);
+  });
+
+  it('cake never spills', () => {
+    const w = new World(ROUTES.find(r => r.item === 'cake')!, mulberry32(1));
+    for (let i = 0; i < 60 * 20; i++) w.step(DT, { run: true, jump: shouldJump(w) }, true);
+    expect(w.spilled).toBe(0);
   });
 });

@@ -93,6 +93,7 @@ export class Game {
     ui.start.hide();
     ui.end.hide();
     ui.controls.setEnabled(true);
+    ui.hud.setItem(this.world.item.emoji, this.world.item.word);
     this.float('hold RUN to hurry →', 70, -120, COLORS.amber, 18, 2.8);
     this.attempt++;
     this.runStartedAt = performance.now();
@@ -148,7 +149,7 @@ export class Game {
     const lines = [
       `Where Are You? 🏠 ${this.route.title}`,
       `Home at ${r.arrival} (${r.lateText})`,
-      `🎂 cake ${r.cake}% · 💥 ${this.world.falls} falls · 🌹 ${this.world.flowers}/${this.world.flowerTotal}`,
+      `${this.world.item.emoji} ${this.world.item.word} ${r.cake}% · 💥 ${this.world.falls} falls · 🌹 ${this.world.flowers}/${this.world.flowerTotal}`,
       `My ${this.script.adjective} ${this.relation} ${this.partnerName}: "${r.line}"`,
       `Rank: ${r.rank}`,
     ];
@@ -196,14 +197,18 @@ export class Game {
         if (w.falls === 5) this.convo.react('fall5');
         break;
       case 'cakeDamage':
-        this.float(`-${e.amount}% cake`, e.x + 6, -92, COLORS.pink, 15, 1.3);
-        if (e.left === 0) this.float('the cake is gone', e.x + 6, -118, COLORS.amber, 16, 1.8);
+        this.float(`-${e.amount}% ${w.item.word}`, e.x + 6, -92, COLORS.pink, 15, 1.3);
+        if (e.left === 0) this.float(`the ${w.item.word} is gone`, e.x + 6, -118, COLORS.amber, 16, 1.8);
         break;
       case 'splat': sfx.splat(); buzz('medium'); break;
       case 'flower': sfx.flower(); this.float('+1 flower', e.x, e.y - 20, COLORS.pink, 15, 1.1); break;
       case 'pigeons': sfx.coo(); this.convo.react('pigeons'); break;
       case 'bark': sfx.bark(); this.float('woof', e.x - 22, -40, COLORS.cream, 13, 0.9); break;
-      case 'getup': if (e.firstScoop) this.float('*scoops the cake back on the plate*', e.x + 20, -100, COLORS.blush, 13, 1.9); break;
+      case 'getup': if (e.firstScoop) this.float(w.item.scoop, e.x + 20, -100, COLORS.blush, 13, 1.9); break;
+      case 'spill':
+        if (w.spilled >= 8) this.convo.react('spill'); // they notice early, which also tells the player
+        if (e.left === 0) this.float(`the ${w.item.word} is gone`, e.x + 6, -118, COLORS.amber, 16, 1.8);
+        break;
       case 'popOut': this.float('boing', e.x, -60, COLORS.amber, 15, 1); break;
       case 'hint': this.float(e.text, e.x, e.y, COLORS.amber, 19, 2.4); break;
       case 'runningLong': this.convo.react('run'); break;
@@ -261,18 +266,18 @@ export class Game {
       route: this.route.id, attempt: this.attempt, seconds: this.runSeconds(),
       rank: r.rank, score: Math.round(r.score),
       late_minutes: Math.round(((this.clock - parseClock(this.route.deadline)) / 60) * 10) / 10,
-      cake: r.cake, falls: w.falls, flowers: w.flowers,
+      item: w.item.id, cake: r.cake, spilled: Math.round(w.spilled), falls: w.falls, flowers: w.flowers,
       replied: this.convo.replied, left_on_read: this.convo.ignored,
     });
     this.card = renderShareCard({
       name: this.partnerName, relation: `${this.script.adjective} ${this.relation}`, route: this.route.title, arrival: r.arrival, lateText: r.lateText,
-      rank: r.rank, messages: this.chat.slice(-8), cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`,
+      rank: r.rank, messages: this.chat.slice(-8), itemEmoji: w.item.emoji, cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`,
       ignored: this.convo.ignored, url: PLAY_URL,
     }).then(b => new File([b], 'where-are-you.png', { type: 'image/png' })).catch(() => null);
     this.ui!.end.show({
       arrival: r.arrival, lateText: r.lateText, rank: r.rank, line: r.line,
       from: `${this.partnerName}, your ${this.script.adjective} ${this.relation}`,
-      cake: r.cake, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`, ignored: this.convo.ignored,
+      cake: r.cake, item: w.item.word, falls: w.falls, flowers: `${w.flowers}/${w.flowerTotal}`, ignored: this.convo.ignored,
     });
   }
 

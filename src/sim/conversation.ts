@@ -1,5 +1,6 @@
 import { fillTemplate, fmtClock, fmtSpoken, parseClock } from './clock';
 import { REPLY_SECONDS, START_MOOD, TIME_SCALE } from './constants';
+import { itemVars } from './items';
 import type { ReplyOption, RouteDef, Script } from './types';
 
 export type ConvEvent =
@@ -38,7 +39,7 @@ export class Conversation {
 
   constructor(private readonly script: Script, private readonly route: RouteDef) {
     this.deadline = parseClock(route.deadline);
-    this.vars = { ...route.vars, deadline: fmtSpoken(this.deadline) };
+    this.vars = { ...route.vars, ...itemVars(route.item), deadline: fmtSpoken(this.deadline) };
   }
 
   /** Nothing typing, nothing queued. */
@@ -95,7 +96,7 @@ export class Conversation {
     if (o.promiseMinutes) this.promises.push({ until: clock + o.promiseMinutes * 60, min: o.promiseMinutes });
     if (o.claimsCake) this.cakeClaim = true;
     if (o.answer) { this.queue.unshift({ text: this.fill(o.answer) }); this.gapT = Math.max(this.gapT, 0.6); }
-    return [{ type: 'repliesClosed' }, { type: 'message', from: 'me', text: o.text }, { type: 'status', text: 'online' }];
+    return [{ type: 'repliesClosed' }, { type: 'message', from: 'me', text: this.fill(o.text) }, { type: 'status', text: 'online' }];
   }
 
   /** The run is over: drop pending texts and replies, then send the final lines. */
@@ -143,7 +144,7 @@ export class Conversation {
       if (this.replyKey) { this.ignored++; this.mood -= 4; }
       this.replyKey = cur.replies;
       this.replyT = REPLY_SECONDS;
-      this.out.push({ type: 'replies', options: this.script.replies[cur.replies].map(r => r.text), seconds: REPLY_SECONDS });
+      this.out.push({ type: 'replies', options: this.script.replies[cur.replies].map(r => this.fill(r.text)), seconds: REPLY_SECONDS });
     }
     this.gapT = 0.45;
   }

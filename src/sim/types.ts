@@ -11,7 +11,8 @@ export interface RouteDef {
   id: string;
   title: string;
   blurb: string;
-  item: 'cake';
+  /** What you carry: see src/sim/items.ts. */
+  item: 'cake' | 'soup';
   /** Rain darkens the sky, lights the lamps early and adds falling rain. */
   weather?: 'rain';
   /** Clock times as "H:MM" (PM). */

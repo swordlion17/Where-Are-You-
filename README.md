@@ -47,6 +47,10 @@ android/              Capacitor Android project (generated, committed)
 2. Add it to `ROUTES` in `src/data/index.ts`.
 3. `npm test`: the bot has to finish it on time, and walking-only must end up late. If either fails, the layout needs work.
 
+### Carried items
+
+A night's `item` (`"cake"` or `"soup"`) decides what you carry. `src/sim/items.ts` holds each item's damage per kind of fall and its spill settings; the cake never spills, the soup spills whenever its wobble passes a limit (running, jumps and landings wobble it; walking barely does). Texts can say `{item}` and `{itemEmoji}`, so the same personality works on every night. A new item needs an entry in `items.ts`, a drawing in `GameScene.drawItem`, and a soup-style test if it behaves differently.
+
 ### Adding a partner personality
 
 1. Copy `src/data/scripts/classic.json` (or `worried.json`). Change `id`, `name` (the one-line description on the start screen), `adjective` (one lowercase word: "your {adjective} girlfriend") and optionally `faces` (five, best mood first).

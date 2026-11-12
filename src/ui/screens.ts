@@ -1,4 +1,5 @@
 import { ROUTES, SCRIPTS, scriptById } from '../data';
+import { itemById } from '../sim/items';
 import { fmtClock, parseClock } from '../sim/clock';
 import type { Relation } from '../sim/types';
 import { load, save } from '../platform/storage';
@@ -96,7 +97,9 @@ export class StartScreen {
     setText(this.nameLabel, `Your ${c.relation}'s name`);
     const name = document.createElement('b');
     name.textContent = c.name;
-    const route = ROUTES.find(r => r.id === c.routeId)?.title ?? '';
+    const routeDef = ROUTES.find(r => r.id === c.routeId);
+    const route = routeDef?.title ?? '';
+    setText(byId('ledeItem'), itemById(routeDef?.item).word);
     const script = scriptById(c.personality);
     this.summary.replaceChildren(name, `, your ${script.adjective} ${c.relation} · ${route}`);
     setText(this.personalityHint, script.name);
@@ -145,6 +148,8 @@ export interface EndView {
   line: string;
   from: string;
   cake: number;
+  /** What was carried: "cake", "soup". */
+  item: string;
   falls: number;
   flowers: string;
   ignored: number;
@@ -177,6 +182,7 @@ export class EndScreen {
     setText(byId('endFrom'), v.from);
     setText(byId('endText'), v.line);
     setText(byId('stCake'), `${v.cake}%`);
+    setText(byId('stItemLabel'), `${v.item[0].toUpperCase()}${v.item.slice(1)} left`);
     setText(byId('stFalls'), v.falls);
     setText(byId('stFlowers'), v.flowers);
     setText(byId('stIgnored'), v.ignored);

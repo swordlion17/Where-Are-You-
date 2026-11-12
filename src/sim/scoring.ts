@@ -1,4 +1,5 @@
 import { fillTemplate, fmtClock, parseClock } from './clock';
+import { itemVars } from './items';
 import type { RouteDef, Script } from './types';
 
 export interface RunSummary {
@@ -34,7 +35,7 @@ export function scoreRun(run: RunSummary, route: RouteDef, script: Script): Resu
   const onTime = run.arrivedAt <= deadline;
   const score = Math.round(run.mood + (cake >= 70 ? 15 : cake >= 35 ? 5 : -10) + run.flowers * 4 + (onTime ? 10 : 0));
   const ending = script.endings.find(e => score >= e.minScore) ?? script.endings[script.endings.length - 1];
-  const vars = route.vars;
+  const vars = { ...route.vars, ...itemVars(route.item) };
   const line = fillTemplate(cake < 35 && ending.lineWithoutCake ? ending.lineWithoutCake : ending.line, vars);
   const lines = [line];
   const lowest = script.endings[script.endings.length - 1];

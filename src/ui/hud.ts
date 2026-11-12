@@ -5,6 +5,7 @@ import { byId, setText } from './dom';
 export class Hud {
   private readonly cake = byId('hudCake');
   private readonly cakeChip = byId('cakeChip');
+  private readonly itemIcon = byId('hudItemIcon');
   private readonly flowers = byId('hudFlowers');
   private readonly dist = byId('hudDist');
   private readonly mute = byId<HTMLButtonElement>('muteBtn');
@@ -17,6 +18,12 @@ export class Hud {
       save('muted', isMuted());
       this.renderMute();
     });
+  }
+
+  /** What's being carried this run (🎂 cake, 🍲 soup). */
+  setItem(emoji: string, word: string): void {
+    setText(this.itemIcon, emoji);
+    this.cakeChip.title = `${word[0].toUpperCase()}${word.slice(1)} left`;
   }
 
   set(cakePct: number, flowers: number, flowerTotal: number, metersLeft: number): void {

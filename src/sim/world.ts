@@ -1,4 +1,5 @@
 import { COYOTE, DOOR_OFFSET, GRAVITY, HOLE_WIDTH, HOUSE_OFFSET, JUMP_BUFFER, JUMP_V, RUN, WALK } from './constants';
+import { itemById, type ItemDef } from './items';
 import { handsCenter, lerpJoints, standPose, type Joints } from './pose';
 import { Ragdoll, type TripKind } from './ragdoll';
 import type { Rng } from './rng';
@@ -44,6 +45,8 @@ export type WorldEvent =
   | { type: 'land'; x: number; hard: boolean }
   | { type: 'fall'; cause: ObstacleType; kind: TripKind | 'hole'; x: number }
   | { type: 'cakeDamage'; amount: number; x: number; left: number }
+  /** About 1% of the item sloshed out (soup). */
+  | { type: 'spill'; x: number; left: number }
   | { type: 'splat'; x: number }
   | { type: 'flower'; x: number; y: number }
   | { type: 'pigeons'; xs: number[] }
@@ -66,10 +69,16 @@ export class World {
   readonly obstacles: Obstacle[];
   readonly holes: Obstacle[];
   readonly p: Player;
+  /** What's being carried; decides falls damage and spilling. */
+  readonly item: ItemDef;
   flyCake: FlyingCake | null = null;
   /** X positions of cake splats left on the sidewalk. */
   readonly decals: number[] = [];
+  /** Condition of the carried item, 0-100 (named for the first item, the cake). */
   cake = 100;
+  /** Total lost to spilling. */
+  spilled = 0;
+  private spillAcc = 0;
   falls = 0;
   flowers = 0;
   doorOpen = false;
@@ -81,6 +90,7 @@ export class World {
   private ev: WorldEvent[] = [];
 
   constructor(readonly route: RouteDef, private readonly rng: Rng) {
+    this.item = itemById(route.item);
     this.finishX = route.length;
     this.doorX = route.length + DOOR_OFFSET;
     this.houseX = route.length + HOUSE_OFFSET;
@@ -229,12 +239,23 @@ export class World {
     p.tiltV += (-60 * p.tilt - 7 * p.tiltV) * dt;
     if (p.onGround && p.speed > 1) p.tiltV += (this.rng() - 0.5) * (running ? 90 : 25) * dt;
     p.tilt = clamp(p.tilt + p.tiltV * dt, -0.5, 0.5);
+    if (p.mode === 'normal') this.spill(dt);
+  }
+
+  /** Soup and the like: wobble past the item's limit pours some out. */
+  private spill(dt: number): void {
+    const { spill, spillTilt } = this.item;
+    const over = Math.abs(this.p.tilt) - spillTilt;
+    if (spill <= 0 || over <= 0 || this.cake <= 0) return;
+    const lost = Math.min(this.cake, over * spill * dt);
+    this.cake -= lost; this.spilled += lost; this.spillAcc += lost;
+    while (this.spillAcc >= 1) { this.spillAcc -= 1; this.ev.push({ type: 'spill', x: this.p.x, left: this.cake }); }
   }
 
   private land(impact: number): void {
     const p = this.p;
     const hard = impact > 500 && p.speed > WALK + 40;
-    if (hard) this.cake = Math.max(0, this.cake - 2);
+    if (hard) this.cake = Math.max(0, this.cake - this.item.damage.hardLanding);
     p.tiltV += (this.rng() < 0.5 ? -1 : 1) * impact / 260;
     this.ev.push({ type: 'land', x: p.x, hard });
   }
@@ -244,7 +265,7 @@ export class World {
     p.mode = 'hole'; p.t = 0; p.hole = h; p.speed = 0;
     this.falls++;
     this.ev.push({ type: 'fall', cause: 'hole', kind: 'hole', x: p.x });
-    this.damageCake(20);
+    this.damageCake(this.item.damage.hole);
   }
 
   // ---------------------------------------------------------------- collisions
@@ -286,7 +307,7 @@ export class World {
         break;
       case 'pigeons':
         this.ev.push({ type: 'pigeons', xs: o.birds.map(dx => o.x + dx) });
-        this.damageCake(4);
+        this.damageCake(this.item.damage.pigeons);
         this.p.tiltV += 3;
         break;
       case 'puddle': case 'banana': this.trip('slip', o, b); break;
@@ -313,7 +334,7 @@ export class World {
     p.rag = new Ragdoll(j, kind, p.speed, this.rng);
     p.mode = 'ragdoll'; p.t = 0; p.blockX = b.r; p.speed = 0; p.vy = 0; p.onGround = true; p.y = 0;
     this.ev.push({ type: 'fall', cause: o.type, kind, x: p.x });
-    this.damageCake(kind === 'slip' ? 25 : kind === 'hit' ? 22 : 30);
+    this.damageCake(this.item.damage[kind]);
   }
 
   private damageCake(n: number): void {

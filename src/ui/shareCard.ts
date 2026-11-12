@@ -12,6 +12,7 @@ export interface CardData {
   lateText: string;
   rank: string;
   messages: CardMessage[];
+  itemEmoji: string;
   cake: number;
   falls: number;
   flowers: string;
@@ -86,7 +87,7 @@ export async function renderShareCard(d: CardData): Promise<Blob> {
 
   // Stats.
   y += 110;
-  chips(g, [`🎂 ${d.cake}%`, `💥 ${d.falls} ${d.falls === 1 ? 'fall' : 'falls'}`, `🌹 ${d.flowers}`, `👀 ${d.ignored} on read`], y);
+  chips(g, [`${d.itemEmoji} ${d.cake}%`, `💥 ${d.falls} ${d.falls === 1 ? 'fall' : 'falls'}`, `🌹 ${d.flowers}`, `👀 ${d.ignored} on read`], y);
 
   // Call to action + link.
   g.textAlign = 'center';
