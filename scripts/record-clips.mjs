@@ -1,4 +1,4 @@
-// Renders the scripted clips in src/dev/clips.ts to vertical MP4s (1080x1920, 30 fps) in release/clips/.
+// Renders the scripted clips in src/dev/clips.ts to vertical MP4s (1080x1920, 30 fps, with the game's sound) in release/clips/.
 //
 //   npm run clips                      all clips
 //   npm run clips -- five-minutes      just one (or several)
@@ -7,7 +7,7 @@
 // one screenshot per video frame into ffmpeg. Needs ffmpeg: on PATH, in ~/tools/ffmpeg-*/bin, or FFMPEG=path.
 // Browser: Edge or Chrome in the usual place, or BROWSER=path.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'vite';
@@ -105,7 +105,8 @@ async function recordClip(page, ffmpeg, name) {
   await page.evaluate(`(async () => { window.__clip = (await window.__director()).createDirector(${JSON.stringify(name)}); })()`);
 
   const file = join(OUT, `${name}.mp4`);
-  const enc = encoder(ffmpeg, file);
+  const silent = join(OUT, `${name}.video.mp4`), wav = join(OUT, `${name}.wav`);
+  const enc = encoder(ffmpeg, silent);
   const started = Date.now();
   let frames = 0;
   for (;;) {
@@ -116,7 +117,18 @@ async function recordClip(page, ffmpeg, name) {
     if (r.done) break;
   }
   await enc.end();
+
+  // Soundtrack: the game's own sounds, rendered offline from what it played while filming.
+  writeFileSync(wav, Buffer.from(await page.evaluate('window.__clip.soundtrack()'), 'base64'));
+  await run(ffmpeg, ['-y', '-loglevel', 'error', '-i', silent, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
+    '-af', 'loudnorm=I=-16:TP=-1.5:LRA=14', '-c:a', 'aac', '-b:a', '160k', '-ar', '44100', '-shortest', '-movflags', '+faststart', file]);
+  rmSync(silent); rmSync(wav);
   console.log(`  ${file}: ${(frames / FPS).toFixed(1)} s, ${frames} frames, rendered in ${((Date.now() - started) / 1000).toFixed(0)} s`);
+}
+
+function run(cmd, args) {
+  return new Promise((res, rej) => spawn(cmd, args, { stdio: ['ignore', 'inherit', 'inherit'] })
+    .on('exit', code => (code === 0 ? res() : rej(new Error(`${cmd} exited with ${code}`)))));
 }
 
 const ffmpeg = findFfmpeg();

@@ -1,11 +1,11 @@
-import { sfx, unlockAudio } from '../audio/sfx';
+import { sfx, unlockAudio, updateAmbience } from '../audio/sfx';
 import { PLAY_URL } from '../config';
 import { routeById, scriptById } from '../data';
 import { analytics } from '../platform/analytics';
 import { buzz, shareText } from '../platform/device';
 import { load, save } from '../platform/storage';
 import { fmtClock, parseClock } from '../sim/clock';
-import { TIME_SCALE } from '../sim/constants';
+import { TIME_SCALE, WALK } from '../sim/constants';
 import { Conversation, type ConvEvent } from '../sim/conversation';
 import { mulberry32 } from '../sim/rng';
 import { scoreRun, type Result } from '../sim/scoring';
@@ -53,6 +53,8 @@ export class Game {
   /** Runs started this visit, and when the current one started (for play stats). */
   private attempt = 0;
   private runStartedAt = 0;
+  /** Which footfall of the walk cycle we're on, for footstep sounds. */
+  private lastFoot = 0;
   /** The run's texts, for the share card. */
   private chat: CardMessage[] = [];
   /** Share card for the finished run, rendered as soon as the end screen shows. */
@@ -114,6 +116,15 @@ export class Game {
     });
   }
 
+  /** A footstep each time a foot comes down (the walk cycle's phase crosses π/2 + kπ). */
+  private footsteps(): void {
+    const p = this.world.p;
+    const foot = Math.floor((p.phase - Math.PI / 2) / Math.PI);
+    if (foot === this.lastFoot) return;
+    this.lastFoot = foot;
+    if (p.onGround && (p.mode === 'normal' || p.mode === 'done') && p.speed > 20) sfx.step(p.speed > WALK + 20);
+  }
+
   private runSeconds(): number { return Math.round((performance.now() - this.runStartedAt) / 100) / 10; }
 
   toMenu(): void {
@@ -131,7 +142,9 @@ export class Game {
       if (playing) this.clock += dt * TIME_SCALE;
       const input = playing ? { run: ui.controls.run, jump: ui.controls.consumeJump() } : { run: false, jump: false };
       for (const e of this.world.step(dt, input, playing)) this.onWorld(e);
+      this.footsteps();
     }
+    updateAmbience({ active: this.state !== 'title', night: this.night, rain: this.route.weather === 'rain' });
     if (playing || this.state === 'ending') for (const e of this.convo.update(dt, this.clock, playing)) this.showConv(e);
     if (this.state === 'ending') this.stepEnding(dt);
     ui.controls.sync();
@@ -188,9 +201,10 @@ export class Game {
     const w = this.world;
     switch (e.type) {
       case 'jump': sfx.jump(); break;
-      case 'land': sfx.land(); break;
+      case 'land': sfx.land(e.hard); break;
       case 'fall':
-        sfx.fall(); buzz('heavy');
+        sfx.fall(e.kind); buzz('heavy');
+        if (e.cause === 'hydrant') sfx.spray();
         this.convo.adjustMood(-2);
         this.convo.react(e.cause);
         if (w.falls === 3) this.convo.react('fall3');
@@ -200,16 +214,17 @@ export class Game {
         this.float(`-${e.amount}% ${w.item.word}`, e.x + 6, -92, COLORS.pink, 15, 1.3);
         if (e.left === 0) this.float(`the ${w.item.word} is gone`, e.x + 6, -118, COLORS.amber, 16, 1.8);
         break;
-      case 'splat': sfx.splat(); buzz('medium'); break;
+      case 'splat': sfx.splat(w.item.id); buzz('medium'); break;
       case 'flower': sfx.flower(); this.float('+1 flower', e.x, e.y - 20, COLORS.pink, 15, 1.1); break;
       case 'pigeons': sfx.coo(); this.convo.react('pigeons'); break;
       case 'bark': sfx.bark(); this.float('woof', e.x - 22, -40, COLORS.cream, 13, 0.9); break;
       case 'getup': if (e.firstScoop) this.float(w.item.scoop, e.x + 20, -100, COLORS.blush, 13, 1.9); break;
       case 'spill':
+        sfx.spill();
         if (w.spilled >= 8) this.convo.react('spill'); // they notice early, which also tells the player
         if (e.left === 0) this.float(`the ${w.item.word} is gone`, e.x + 6, -118, COLORS.amber, 16, 1.8);
         break;
-      case 'popOut': this.float('boing', e.x, -60, COLORS.amber, 15, 1); break;
+      case 'popOut': sfx.boing(); this.float('boing', e.x, -60, COLORS.amber, 15, 1); break;
       case 'hint': this.float(e.text, e.x, e.y, COLORS.amber, 19, 2.4); break;
       case 'runningLong': this.convo.react('run'); break;
       case 'arrive': this.arrive(); break;
@@ -218,7 +233,7 @@ export class Game {
 
   private showConv(e: ConvEvent): void {
     if (e.type === 'message') this.chat.push({ from: e.from, text: e.text });
-    if (e.type === 'message' && e.from === 'them') { sfx.ping(); buzz('light'); }
+    if (e.type === 'message' && e.from === 'them') { sfx.ping(this.convo.mood); buzz('light'); }
     this.ui!.phone.apply(e, i => this.pick(i));
   }
 
@@ -259,6 +274,8 @@ export class Game {
   private showEnd(): void {
     const r = this.result!, w = this.world;
     this.state = 'over';
+    const endings = this.script.endings;
+    sfx.stinger(Math.max(0, endings.findIndex(e => e.rank === r.rank)), endings.length);
     const key = `best.${this.route.id}`;
     const best = load<BestRun | null>(key, null);
     if (!best || r.score > best.score) save(key, { rank: r.rank, arrival: r.arrival, score: r.score });

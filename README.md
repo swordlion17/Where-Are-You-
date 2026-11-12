@@ -60,6 +60,15 @@ A night's `item` (`"cake"` or `"soup"`) decides what you carry. `src/sim/items.t
 
 Script texts are written relative to the deadline (`"at": -10` = ten minutes before). `{deadline}` and any route `vars` such as `{food}` are filled in automatically.
 
+### Sound
+
+Everything is synthesized with WebAudio; there are no audio files.
+
+- `src/audio/voices.ts`: every sound as a function of `(mix, startTime, ...)`. The text ping drops in pitch as their mood sours; falls sound different by kind; cake and soup splat differently; endings get a stinger from a warm chord down to a sad trombone.
+- `src/audio/ambience.ts`: city hum, birds by day, crickets at night, passing cars, rain.
+- `src/audio/sfx.ts`: what the game calls (`sfx.ping(mood)`, `sfx.fall(kind)`...), mute, and pausing audio while the tab is hidden.
+- Because voices take an explicit time, the same code renders offline: `npm run clips` gives every clip the game's own soundtrack.
+
 ### Replacing placeholder art
 
 Every sprite comes from `src/render/textures.ts` under a key (`cone`, `hydrant`, `house`…). Load a PNG with the same key and the same anchor and the rest of the code doesn't change. The player, dog and skater are still drawn as vector shapes in `GameScene.ts`; those become sprite sheets when the art is ready.
@@ -80,7 +89,7 @@ Anonymous gameplay events go to PostHog when `ANALYTICS.key` in `src/config.ts` 
 
 ## Clips for TikTok / Shorts / Reels
 
-`npm run clips` renders the scripted moments in `src/dev/clips.ts` to vertical MP4s (1080×1920, 30 fps, silent) in `release/clips/`. `npm run clips -- five-minutes` renders just one.
+`npm run clips` renders the scripted moments in `src/dev/clips.ts` to vertical MP4s (1080×1920, 30 fps, with the game's sound) in `release/clips/`. `npm run clips -- five-minutes` renders just one.
 
 - Each clip is a short script: where the player starts, which obstacles to walk into, which replies to tap, when to stop. An autopilot (`src/sim/autopilot.ts`, the same one the tests use) jumps everything else.
 - `src/dev/director.ts` plays the script one video frame at a time: Phaser's loop is paused and stepped manually, and CSS animations are set to the same clock, so the footage is smooth however slow the capture is.

@@ -1,57 +1,82 @@
-/** Tiny WebAudio synth for placeholder sound effects. No audio files needed. */
-let ac: AudioContext | null = null;
-let noiseBuf: AudioBuffer | null = null;
+import { Ambience, type AmbienceState } from './ambience';
+import { createMix, voices, type FallKind, type Mix, type VoiceName } from './voices';
+
+/** Live audio: one AudioContext, created on the first tap (browsers require a gesture). */
+let ctx: AudioContext | null = null;
+let mix: Mix | null = null;
+let master: GainNode | null = null;
+let ambience: Ambience | null = null;
 let muted = false;
+let lastDrip = 0;
+
+type VoiceArgs<N extends VoiceName> = Parameters<(typeof voices)[N]> extends [Mix, number, ...infer R] ? R : never;
+
+/** Dev hook (clip recording): sees every sound and ambience update, so clips can get a soundtrack. */
+export type SoundEvent = { voice: VoiceName; args: unknown[] } | { ambience: AmbienceState };
+let recorder: ((e: SoundEvent) => void) | null = null;
+export function setSoundRecorder(fn: ((e: SoundEvent) => void) | null): void { recorder = fn; }
 
 export function unlockAudio(): void {
   try {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!ac && Ctor) ac = new Ctor();
-    if (ac && ac.state === 'suspended') void ac.resume();
-  } catch { ac = null; }
+    if (!ctx && Ctor) {
+      ctx = new Ctor();
+      ({ mix, master } = createMix(ctx, ctx.destination));
+      master.gain.value = muted ? 0 : 1;
+      ambience = new Ambience(mix);
+      // Silence (and save battery) while the tab or app is in the background.
+      document.addEventListener('visibilitychange', () => {
+        if (!ctx) return;
+        if (document.hidden) void ctx.suspend(); else void ctx.resume();
+      });
+    }
+    if (ctx && ctx.state === 'suspended' && !document.hidden) void ctx.resume();
+  } catch { ctx = null; mix = null; }
 }
 
-export function setMuted(m: boolean): void { muted = m; }
+export function setMuted(m: boolean): void {
+  muted = m;
+  if (ctx && master) master.gain.setTargetAtTime(m ? 0 : 1, ctx.currentTime, 0.03);
+}
 export function isMuted(): boolean { return muted; }
 
-function tone(f: number, d: number, type: OscillatorType = 'sine', v = 0.12, slide = 0, delay = 0): void {
-  if (!ac || muted) return;
+function play<N extends VoiceName>(name: N, ...args: VoiceArgs<N>): void {
+  recorder?.({ voice: name, args });
+  if (!ctx || !mix || muted) return;
   try {
-    const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f + slide), t + d);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(v, t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + 0.05);
-  } catch { /* audio is optional */ }
-}
-
-function noise(d: number, v = 0.2, delay = 0, freq = 900): void {
-  if (!ac || muted) return;
-  try {
-    if (!noiseBuf) {
-      noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.5), ac.sampleRate);
-      const ch = noiseBuf.getChannelData(0);
-      for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
-    }
-    const t = ac.currentTime + delay, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-    s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.value = freq;
-    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    s.connect(f); f.connect(g); g.connect(ac.destination); s.start(t); s.stop(t + d + 0.05);
+    (voices[name] as (m: Mix, t: number, ...a: unknown[]) => void)(mix, ctx.currentTime + 0.01, ...args);
   } catch { /* audio is optional */ }
 }
 
 export const sfx = {
-  ping() { tone(1175, 0.12, 'sine', 0.11); tone(1568, 0.18, 'sine', 0.09, 0, 0.1); },
-  send() { tone(700, 0.1, 'sine', 0.08, 500); },
-  jump() { tone(380, 0.14, 'square', 0.035, 320); },
-  land() { noise(0.06, 0.08, 0, 500); },
-  fall() { tone(520, 0.4, 'triangle', 0.11, -400); },
-  splat() { noise(0.28, 0.35, 0, 700); tone(150, 0.22, 'sine', 0.18, -80); },
-  flower() { tone(988, 0.1, 'sine', 0.09); tone(1319, 0.16, 'sine', 0.09, 0, 0.08); tone(1760, 0.2, 'sine', 0.07, 0, 0.16); },
-  bark() { tone(330, 0.07, 'square', 0.05, -140); tone(300, 0.08, 'square', 0.05, -140, 0.12); },
-  coo() { tone(420, 0.18, 'sine', 0.06, -120); noise(0.3, 0.12, 0, 2500); },
-  knock() { noise(0.06, 0.5, 0, 400); noise(0.06, 0.5, 0.18, 400); noise(0.06, 0.5, 0.36, 400); },
-  door() { tone(523, 0.2, 'sine', 0.08); tone(659, 0.2, 'sine', 0.08, 0, 0.12); tone(784, 0.35, 'sine', 0.08, 0, 0.24); },
+  ping: (mood: number) => play('ping', mood),
+  send: () => play('send'),
+  step: (run: boolean) => play('step', run),
+  jump: () => play('jump'),
+  land: (hard: boolean) => play('land', hard),
+  fall: (kind: FallKind) => play('fall', kind),
+  splat: (item: string) => play('splat', item),
+  /** Soup sloshing out; throttled so a long spill drips instead of buzzing. */
+  spill: () => {
+    const now = performance.now();
+    if (now - lastDrip < 110) return;
+    lastDrip = now;
+    play('drip', 0.03);
+  },
+  flower: () => play('flower'),
+  bark: () => play('bark'),
+  coo: () => play('coo'),
+  knock: () => play('knock'),
+  door: () => play('door'),
+  boing: () => play('boing'),
+  spray: () => play('spray'),
+  /** End screen: tier 0 = best ending. */
+  stinger: (tier: number, tiers: number) => play('stinger', tier, tiers),
 };
+
+/** Called every frame with the street's state; fades beds and schedules ambient events. */
+export function updateAmbience(s: AmbienceState): void {
+  recorder?.({ ambience: s });
+  if (!ctx || !ambience) return;
+  try { ambience.update(ctx.currentTime + 0.05, s); } catch { /* audio is optional */ }
+}

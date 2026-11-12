@@ -1,4 +1,7 @@
 import type Phaser from 'phaser';
+import { Ambience, type AmbienceState } from '../audio/ambience';
+import { setSoundRecorder, type SoundEvent } from '../audio/sfx';
+import { createMix, voices, type Mix } from '../audio/voices';
 import type { Game } from '../game/Game';
 import { shouldJump } from '../sim/autopilot';
 import { parseClock } from '../sim/clock';
@@ -34,8 +37,14 @@ export function createDirector(name: string): Director {
   return new Director(plan);
 }
 
+/** A sound the game made, at its time in the footage. */
+type LoggedSound = SoundEvent & { t: number };
+
 export class Director {
   done = false;
+  /** Every sound and ambience update while filming, for the soundtrack. */
+  private readonly sounds: LoggedSound[] = [];
+  private filming = false;
   private readonly game = win.__game;
   private readonly phaser = win.__phaser;
   private readonly deadline: number;
@@ -67,8 +76,10 @@ export class Director {
     this.deadline = parseClock(this.game.route.deadline);
 
     this.game.clock = this.deadline + plan.warm.from * 60;
+    setSoundRecorder(e => { if (this.filming) this.sounds.push({ ...e, t: this.recorded }); });
     this.offCamera(plan.warm.seconds);
     this.nextSegment();
+    this.filming = true;
   }
 
   private get world(): World { return this.game.world; }
@@ -128,7 +139,28 @@ export class Director {
   }
 
   /** Let time pass without filming: obstacles moved away and the player kept in place. */
+  /**
+   * Renders what the game played while filming into a WAV (base64), with the same synth the game
+   * uses live. Called once, after the last frame.
+   */
+  async soundtrack(): Promise<string> {
+    setSoundRecorder(null);
+    const sr = 44100, seconds = this.recorded + 0.5;
+    const off = new OfflineAudioContext(2, Math.ceil(sr * seconds), sr);
+    const { mix } = createMix(off, off.destination);
+    const amb = new Ambience(mix);
+    let lastAmbience = -1;
+    for (const e of this.sounds) {
+      const t = e.t + 0.02;
+      if ('ambience' in e) { if (e.t !== lastAmbience) { amb.update(t, e.ambience as AmbienceState); lastAmbience = e.t; } }
+      else (voices[e.voice] as (m: Mix, t: number, ...a: unknown[]) => void)(mix, t, ...e.args);
+    }
+    return wavBase64(await off.startRendering());
+  }
+
   private offCamera(seconds: number): void {
+    const wasFilming = this.filming;
+    this.filming = false;
     const w = this.world;
     const saved = w.obstacles.map(o => [o.x, o.x1] as const);
     for (const o of w.obstacles) { o.x = -1e6; o.x1 = -1e6 + 10; }
@@ -141,6 +173,7 @@ export class Director {
       if (i % SUBSTEPS === 1) { this.vt += 1000 / FPS; this.syncAnimations(); }
     }
     w.obstacles.forEach((o, i) => { o.x = saved[i][0]; o.x1 = saved[i][1]; });
+    this.filming = wasFilming;
   }
 
   private teleport(x: number): void {
@@ -213,4 +246,19 @@ export class Director {
     if (a <= 0) { this.card.el.remove(); this.card = null; return; }
     this.card.el.style.opacity = String(a);
   }
+}
+
+/** 16-bit stereo PCM WAV, base64 (to hand back to the recorder script). */
+function wavBase64(buf: AudioBuffer): string {
+  const n = buf.length, sr = buf.sampleRate, ch = [buf.getChannelData(0), buf.getChannelData(Math.min(1, buf.numberOfChannels - 1))];
+  const v = new DataView(new ArrayBuffer(44 + n * 4));
+  const text = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  text(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); text(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, 2, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true);
+  text(36, 'data'); v.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) for (let c = 0; c < 2; c++) v.setInt16(44 + (i * 2 + c) * 2, Math.max(-1, Math.min(1, ch[c][i])) * 32767, true);
+  const bytes = new Uint8Array(v.buffer);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
 }
