@@ -74,6 +74,8 @@ export class GameScene extends Phaser.Scene {
   private W = 1; private H = 1; private dpr = 1; private S = 1; private GY = 1;
   private portrait = true; private bgK = 1; private skyTop = 0;
   private camX = 0; private shake = 0; private elapsed = 0; private frameDt = 0;
+  /** Render-only motion (no effect on gameplay): springs for squash, lean, head and item follow-through, camera lead. */
+  private anim = { squash: 0, squashV: 0, lean: 0, lastSpeed: 0, head: 0, headV: 0, item: 0, itemV: 0, lastHipY: 0, lead: 0 };
 
   /** Set by main.ts; called once the scene exists so the first layout can run. */
   onCreated: (() => void) | null = null;
@@ -169,7 +171,11 @@ export class GameScene extends Phaser.Scene {
     if (w !== this.builtFor) this.buildRun(w);
     this.consumeEvents();
     this.stepParticles(dt);
-    this.camX += (w.focusX - (this.W / this.S) * this.camFrac - this.camX) * Math.min(1, dt * 5);
+    // Lead the camera a little further when running, easing in and out so speed changes don't jolt the view.
+    const viewW = this.W / this.S;
+    const leadTarget = w.p.mode === 'normal' ? clamp((w.p.speed - 140) / 105, 0, 1) * viewW * 0.05 : 0;
+    this.anim.lead += (leadTarget - this.anim.lead) * Math.min(1, dt * 2);
+    this.camX += (w.focusX + this.anim.lead - viewW * this.camFrac - this.camX) * Math.min(1, dt * 5);
     this.shake = Math.max(0, this.shake - dt * 2.5);
     this.draw(w);
   }
@@ -244,6 +250,10 @@ export class GameScene extends Phaser.Scene {
           for (let i = 0; i < 2; i++) this.parts.push({ x: h.x + dir * 9, y: h.y - 8, vx: w.p.speed * 0.6 + dir * (30 + Math.random() * 60), vy: -40 - Math.random() * 90, life: 0.7, r: 1.4 + Math.random() * 1.2, color: i ? 0xf2b25c : 0xe8893a, g: 1 });
           break;
         }
+        case 'jump':
+          this.anim.squashV -= 6; // stretch on take-off
+          this.anim.itemV -= 30;
+          break;
         case 'fall':
           this.shake = 0.7;
           if (e.cause === 'banana') this.parts.push({ x: e.x + 8, y: -6, vx: 260, vy: -300, life: 1.2, r: 3.5, color: 0xffd23f, g: 1 });
@@ -255,6 +265,9 @@ export class GameScene extends Phaser.Scene {
           for (const x of e.xs) this.parts.push({ bird: true, x, y: -8, vx: -40 - Math.random() * 140, vy: -170 - Math.random() * 140, life: 2.4, r: 0, color: 0x8d90ab, g: 0, flap: Math.random() * 6 });
           break;
         case 'land':
+          // Squash on landing; the item dips and rebounds a beat later.
+          this.anim.squashV += e.hard ? 9 : 6;
+          this.anim.itemV += e.hard ? 70 : 45;
           for (let i = 0; i < 5; i++) this.parts.push({ x: e.x + (Math.random() - 0.5) * 16, y: -1, vx: (Math.random() - 0.5) * 120, vy: -Math.random() * 80, life: 0.35, r: 2, color: 0xf0dce6, g: 0.3 });
           break;
         case 'float':
@@ -452,10 +465,10 @@ export class GameScene extends Phaser.Scene {
       else if (o.type === 'skater') this.drawSkater(g, o.x, o.active);
     }
     const p = w.p;
-    const j = w.pose();
+    const j = this.animatePose(w, w.pose());
     if (p.mode !== 'hole' || p.y < 60) {
-      if (p.mode !== 'hole') { g.fillStyle(0x140e28, 0.25); g.fillEllipse(j.hip.x, 1, 32 * (1 - clamp(-p.y / 220, 0, 0.6)), 6); }
-      this.drawPerson(g, j, w.holdingCake ? { tilt: p.tilt, hp: w.cake } : null, w.dazed);
+      if (p.mode !== 'hole') { g.fillStyle(0x140e28, 0.25); g.fillEllipse(j.hip.x, 1, 32 * (1 - clamp(-p.y / 220, 0, 0.6)) * (1 + this.anim.squash * 0.6), 6); }
+      this.drawPerson(g, j, w.holdingCake ? { tilt: p.tilt, hp: w.cake, dy: this.anim.item } : null, w.dazed);
     }
     if (w.flyCake) this.drawItem(g, w.flyCake.x, w.flyCake.y, w.flyCake.rot, w.flyCake.hp);
     for (const q of this.parts) {
@@ -490,7 +503,45 @@ export class GameScene extends Phaser.Scene {
     for (const p of pts) g.fillCircle(p.x, p.y, width / 2);
   }
 
-  private drawPerson(g: Gfx, j: Joints, cake: { tilt: number; hp: number } | null, dazed: boolean): void {
+  /**
+   * Follow-through on top of the procedural pose: squash and stretch around the feet, a lean into
+   * speed changes, and a head that lags the body's bob. Springs advance by the frame's dt.
+   */
+  private animatePose(w: World, j: Joints): Joints {
+    const a = this.anim, p = w.p, dt = Math.max(1e-4, this.frameDt);
+    const spring = (x: number, v: number, k: number, c: number): [number, number] => {
+      v += (-k * x - c * v) * dt;
+      return [x + v * dt, v];
+    };
+    [a.squash, a.squashV] = spring(a.squash, a.squashV, 260, 16);
+    [a.item, a.itemV] = spring(a.item, a.itemV, 180, 9);
+    const upright = p.mode === 'normal' || p.mode === 'done';
+    const accel = upright ? (p.speed - a.lastSpeed) / dt : 0;
+    a.lastSpeed = p.speed;
+    a.lean += (clamp(accel / 1600, -1, 1) - a.lean) * Math.min(1, dt * 6);
+    // Head lags the hip's vertical motion (a little overlap on every step and landing).
+    const hipVy = (j.hip.y - a.lastHipY) / dt;
+    a.lastHipY = j.hip.y;
+    a.headV += clamp(-hipVy, -400, 400) * 0.06 * dt * 60;
+    [a.head, a.headV] = spring(a.head, a.headV, 320, 18);
+    if (!upright || this.game2.reducedMotion) return j;
+
+    const sq = clamp(a.squash, -0.25, 0.3), baseY = p.y, hipX = j.hip.x;
+    const out = {} as Joints;
+    for (const k of Object.keys(j) as (keyof Joints)[]) {
+      const q = j[k];
+      const height = baseY - q.y; // above the feet
+      let x = hipX + (q.x - hipX) * (1 + sq * 0.5);
+      const y = baseY - height * (1 - sq);
+      // Lean the upper body into acceleration, back when braking.
+      if (k !== 'kneeL' && k !== 'kneeR' && k !== 'footL' && k !== 'footR' && k !== 'hip') x += a.lean * 7 * clamp(height / 70, 0, 1.2);
+      out[k] = { x, y };
+    }
+    out.head = { x: out.head.x, y: out.head.y + clamp(a.head, -3, 3) };
+    return out;
+  }
+
+  private drawPerson(g: Gfx, j: Joints, cake: { tilt: number; hp: number; dy?: number } | null, dazed: boolean): void {
     this.limb(g, [j.neck, j.elbowR, j.handR], 5.5, COLORS.shirtD);
     g.fillStyle(COLORS.skin, 1); g.fillCircle(j.handR.x, j.handR.y, 2.6);
     this.limb(g, [j.hip, j.kneeR, j.footR], 7.5, COLORS.pantsD);
@@ -499,7 +550,7 @@ export class GameScene extends Phaser.Scene {
     this.limb(g, [j.hip, j.kneeL, j.footL], 7.5, COLORS.pants);
     g.fillStyle(COLORS.shoe, 1); g.fillEllipse(j.footL.x + 2.5, j.footL.y - 1, 10, 6);
     this.drawHead(g, j, dazed);
-    if (cake) { const h = handsCenter(j); this.drawItem(g, h.x, h.y, cake.tilt, cake.hp); }
+    if (cake) { const h = handsCenter(j); this.drawItem(g, h.x, h.y + clamp(cake.dy ?? 0, -5, 5), cake.tilt, cake.hp); }
     this.limb(g, [j.neck, j.elbowL, j.handL], 5.5, COLORS.shirt);
     g.fillStyle(COLORS.skin, 1); g.fillCircle(j.handL.x, j.handL.y, 3);
   }

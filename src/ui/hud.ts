@@ -26,11 +26,21 @@ export class Hud {
     this.cakeChip.title = `${word[0].toUpperCase()}${word.slice(1)} left`;
   }
 
+  private lastPct = 100;
+
   set(cakePct: number, flowers: number, flowerTotal: number, metersLeft: number): void {
+    if (cakePct < this.lastPct - 2) this.bump(); // a visible hit, not every 1% of soup
+    if (cakePct < this.lastPct - 2 || cakePct > this.lastPct) this.lastPct = cakePct;
     setText(this.cake, `${cakePct}%`);
     this.cakeChip.classList.toggle('low', cakePct < 35);
     setText(this.flowers, `${flowers}/${flowerTotal}`);
     setText(this.dist, `${metersLeft} m`);
+  }
+
+  private bump(): void {
+    this.cakeChip.classList.remove('bump');
+    void this.cakeChip.offsetWidth; // restart the animation
+    this.cakeChip.classList.add('bump');
   }
 
   private renderMute(): void {

@@ -192,7 +192,16 @@ h2 { margin: 0; font: 800 clamp(30px, 9vw, 40px)/1.02 var(--f-display); letter-s
 @keyframes blink { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
 @keyframes buzz { 0%, 100% { transform: none; } 20% { transform: rotate(-1.4deg) translateX(-3px); } 40% { transform: rotate(1.4deg) translateX(3px); } 60% { transform: rotate(-0.9deg); } 80% { transform: rotate(0.7deg); } }
 @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes rise { from { transform: translateY(48px) scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.18) rotate(-3deg); } 100% { transform: none; } }
+#end:not([hidden]) .card { animation: rise 0.5s cubic-bezier(0.2, 1.25, 0.4, 1) both; }
+#start .card { animation: rise 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+#replies button { animation: pop 0.26s cubic-bezier(0.2, 1.4, 0.4, 1) backwards; }
+#replies button:nth-child(2) { animation-delay: 0.07s; }
+#replies button:nth-child(3) { animation-delay: 0.14s; }
+.chip.bump { animation: bump 0.32s ease-out; }
+.ctl { transition: background 0.08s, transform 0.12s cubic-bezier(0.2, 1.6, 0.4, 1); }
 @media (prefers-reduced-motion: reduce) {
-  .bub, .title-bubble, #phone.buzz { animation: none; }
+  .bub, .title-bubble, #phone.buzz, #end .card, #start .card, #replies button, .chip.bump { animation: none; }
   .typing i, .tdots i { animation: none; opacity: 0.6; }
 }
